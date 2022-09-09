@@ -63,8 +63,8 @@ pub struct AuthorizerAccount {
 #[account]
 pub struct Oracle {
     authorizer: Pubkey, // 32
-    team_ids: [u8; 2],  // minimum 2 rows = 4 bytes size of array  + 2 byte = 6
-    results: [u8; 2],   // minimum 2 rows = 4 bytes of size of array + 2 byte = 6
+    team_ids: [u8; 2],  // 2
+    results: [u8; 2],   // 2
     closed_at: i64,     // 8
     finished_at: i64,   // 8
     is_finished: bool,  // 1

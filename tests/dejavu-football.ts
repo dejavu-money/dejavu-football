@@ -3,6 +3,10 @@ import { Program } from "@project-serum/anchor";
 import { DejavuFootball } from "../target/types/dejavu_football";
 import { BN } from "bn.js";
 import { assert } from "chai";
+import createAuthorizer from "./utils/create-authorizer";
+import createOracle from "./utils/create-oracle";
+import updateOracle from "./utils/update-oracle";
+
 
 describe("dejavu-football", () => {
   const provider = anchor.AnchorProvider.env();
@@ -12,15 +16,10 @@ describe("dejavu-football", () => {
   describe('#create-authorizer', async () => {
     it("creates an authorizer", async () => {
       const authId = new Date().getTime();
-      const [authorizer] = await anchor.web3.PublicKey.findProgramAddress(
-        [provider.wallet.publicKey.toBuffer(), Buffer.from(`id-${authId}`)],
-        program.programId
-      );
-  
-      await program.methods.createAuthorizer(new BN(authId)).accounts({
-        authorizer: authorizer,
-        user: provider.wallet.publicKey
-      }).rpc();
+      const { authorizer } = await createAuthorizer(program, {
+        user: provider.wallet.publicKey,
+        authId
+      })
   
       const authorizerData = await program.account.authorizerAccount.fetch(authorizer);
   
@@ -37,34 +36,23 @@ describe("dejavu-football", () => {
       const closedAt = new Date().getTime();
       const finishedAt = new Date().getTime() + 1;
       
-      const [authorizer] = await anchor.web3.PublicKey.findProgramAddress(
-        [provider.wallet.publicKey.toBuffer(), Buffer.from(`id-${authId}`)],
-        program.programId
-      );
-  
-      await program.methods.createAuthorizer(new BN(authId)).accounts({
-        authorizer: authorizer,
-        user: provider.wallet.publicKey
-      }).rpc();
+      const { authorizer } = await createAuthorizer(program, {
+        user: provider.wallet.publicKey,
+        authId
+      });
+
 
       // create an oracle
 
-      const [oracle] = await anchor.web3.PublicKey.findProgramAddress(
-        [authorizer.toBuffer(), Buffer.from(`id-${authId}`)],
-        program.programId
-      );
-
-      await program.methods.createOracle(
-        new BN(authId), // oracle id
-        1, // team_a id
-        2,  // team_b id
-        new BN(closedAt), // closed_at timestamp, 
-        new BN(finishedAt) // finished_at timestamp
-      ).accounts({
-        authorizer: authorizer,
-        oracle: oracle,
-        user: provider.wallet.publicKey
-      }).rpc();
+      const { oracle } = await createOracle(program, {
+        teamAId: 1,
+        teamBId: 2,
+        user: provider.wallet.publicKey,
+        closedAt,
+        finishedAt,
+        authorizer,
+        authId
+      });
 
       const oracleData = await program.account.oracle.fetch(oracle);
 
@@ -98,42 +86,33 @@ describe("dejavu-football", () => {
       const closedAt = new Date().getTime();
       const finishedAt = new Date().getTime() + 1;
       
-      const [authorizer] = await anchor.web3.PublicKey.findProgramAddress(
-        [provider.wallet.publicKey.toBuffer(), Buffer.from(`id-${authId}`)],
-        program.programId
-      );
-  
-      await program.methods.createAuthorizer(new BN(authId)).accounts({
-        authorizer: authorizer,
-        user: provider.wallet.publicKey
-      }).rpc();
+      const { authorizer } = await createAuthorizer(program, {
+        user: provider.wallet.publicKey,
+        authId
+      })
 
       // create an oracle
 
-      const [oracle] = await anchor.web3.PublicKey.findProgramAddress(
-        [authorizer.toBuffer(), Buffer.from(`id-${authId}`)],
-        program.programId
-      );
-
-      await program.methods.createOracle(
-        new BN(authId), // oracle id
-        20, // team_a id
-        25,  // team_b id
-        new BN(closedAt), // closed_at timestamp, 
-        new BN(finishedAt) // finished_at timestamp
-      ).accounts({
-        authorizer: authorizer,
-        oracle: oracle,
-        user: provider.wallet.publicKey
-      }).rpc();
+      const { oracle } = await createOracle(program, {
+        teamAId: 20,
+        teamBId: 25,
+        user: provider.wallet.publicKey,
+        closedAt,
+        finishedAt,
+        authorizer,
+        authId
+      });
 
       // update oracle
 
-      await program.methods.updateOracle(1, 2).accounts({
-        authorizer: authorizer,
-        oracle: oracle,
-        user: provider.wallet.publicKey
-      }).rpc();
+      await updateOracle(program, {
+          user: provider.wallet.publicKey,
+          teamAValue: 1,
+          teamBValue: 2,
+          oracle,
+          authorizer
+        }
+      );
 
       const oracleData = await program.account.oracle.fetch(oracle);
 
@@ -176,40 +155,29 @@ describe("dejavu-football", () => {
       const closedAt = new Date().getTime();
       const finishedAt = new Date().getTime() + 1;
       
-      const [authorizer] = await anchor.web3.PublicKey.findProgramAddress(
-        [provider.wallet.publicKey.toBuffer(), Buffer.from(`id-${authId}`)],
-        program.programId
-      );
-  
-      await program.methods.createAuthorizer(new BN(authId)).accounts({
-        authorizer: authorizer,
-        user: provider.wallet.publicKey
-      }).rpc();
+      const { authorizer } = await createAuthorizer(program, {
+        user: provider.wallet.publicKey,
+        authId
+      })
 
       // create an oracle
 
-      const [oracle] = await anchor.web3.PublicKey.findProgramAddress(
-        [authorizer.toBuffer(), Buffer.from(`id-${authId}`)],
-        program.programId
-      );
+      const { oracle } = await createOracle(program, {
+        teamAId: 20,
+        teamBId: 25,
+        user: provider.wallet.publicKey,
+        closedAt,
+        finishedAt,
+        authorizer,
+        authId
+      });
 
       // Create an oracle invalid metadata account
+      
       const [oracleInvalidMetadata] = await anchor.web3.PublicKey.findProgramAddress(
         [oracle.toBuffer(), Buffer.from('invalid')],
         program.programId
       );
-
-      await program.methods.createOracle(
-        new BN(authId), // oracle id
-        20, // team_a id
-        25,  // team_b id
-        new BN(closedAt), // closed_at timestamp, 
-        new BN(finishedAt) // finished_at timestamp
-      ).accounts({
-        authorizer: authorizer,
-        oracle: oracle,
-        user: provider.wallet.publicKey,
-      }).rpc();
 
       // invalidate oracle
 
