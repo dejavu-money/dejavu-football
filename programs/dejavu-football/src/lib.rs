@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
-
 #[program]
 pub mod dejavu_football {
     use super::*;
@@ -20,10 +19,15 @@ pub mod dejavu_football {
         team_a_value: u8,
         team_b_value: u8,
     ) -> Result<()> {
-
         // set team ids
         ctx.accounts.oracle.results[0] = team_a_value;
         ctx.accounts.oracle.results[1] = team_b_value;
+        Ok(())
+    }
+
+    pub fn invalidate_oracle(ctx: Context<InvalidateOracleInstruction>) -> Result<()> {
+        // invalidate oracle
+        ctx.accounts.oracle.is_invalid = true;
         Ok(())
     }
 
@@ -61,7 +65,7 @@ pub struct Oracle {
     closed_at: i64,     // 8
     finished_at: i64,   // 8
     is_finished: bool,  // 1
-    is_invalid: bool // 1
+    is_invalid: bool,   // 1
 }
 
 #[derive(Accounts)]
@@ -87,6 +91,22 @@ pub struct CreateOracleInstruction<'info> {
 
 #[derive(Accounts)]
 pub struct UpdateOracleInstruction<'info> {
+    #[account(
+        mut,
+        constraint = oracle.authorizer == *authorizer.to_account_info().key,
+        constraint = authorizer.authority == *user.to_account_info().key,
+        constraint = oracle.is_invalid == false,
+        constraint = oracle.is_finished == false
+    )]
+    oracle: Account<'info, Oracle>,
+    authorizer: Account<'info, AuthorizerAccount>,
+    #[account(mut)]
+    user: Signer<'info>,
+    system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct InvalidateOracleInstruction<'info> {
     #[account(
         mut,
         constraint = oracle.authorizer == *authorizer.to_account_info().key,

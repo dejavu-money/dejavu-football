@@ -167,4 +167,54 @@ describe("dejavu-football", () => {
     });
   });
 
+  describe('#invalidate-oracle', async () => {
+    it("invalidates an oracle", async () => {
+      // create an auhorizer
+
+      const authId = new Date().getTime();
+      const closedAt = new Date().getTime();
+      const finishedAt = new Date().getTime() + 1;
+      
+      const [authorizer] = await anchor.web3.PublicKey.findProgramAddress(
+        [provider.wallet.publicKey.toBuffer(), Buffer.from(`id-${authId}`)],
+        program.programId
+      );
+  
+      await program.methods.createAuthorizer(new BN(authId)).accounts({
+        authorizer: authorizer,
+        user: provider.wallet.publicKey
+      }).rpc();
+
+      // create an oracle
+
+      const [oracle] = await anchor.web3.PublicKey.findProgramAddress(
+        [authorizer.toBuffer(), Buffer.from(`id-${authId}`)],
+        program.programId
+      );
+
+      await program.methods.createOracle(
+        new BN(authId), // oracle id
+        20, // team_a id
+        25,  // team_b id
+        new BN(closedAt), // closed_at timestamp, 
+        new BN(finishedAt) // finished_at timestamp
+      ).accounts({
+        authorizer: authorizer,
+        oracle: oracle,
+        user: provider.wallet.publicKey
+      }).rpc();
+
+      // invalidate oracle
+
+      await program.methods.invalidateOracle().accounts({
+        authorizer: authorizer,
+        oracle: oracle,
+        user: provider.wallet.publicKey
+      }).rpc();
+
+      const oracleData = await program.account.oracle.fetch(oracle);
+      assert.ok(oracleData.isInvalid);
+    });
+  });
+
 });
