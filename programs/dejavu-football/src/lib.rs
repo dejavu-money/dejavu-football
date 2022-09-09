@@ -25,9 +25,12 @@ pub mod dejavu_football {
         Ok(())
     }
 
-    pub fn invalidate_oracle(ctx: Context<InvalidateOracleInstruction>) -> Result<()> {
-        // invalidate oracle
+    pub fn invalidate_oracle(
+        ctx: Context<InvalidateOracleInstruction>,
+        reason: String,
+    ) -> Result<()> {
         ctx.accounts.oracle.is_invalid = true;
+        ctx.accounts.oracle_invalid_medata.reason = reason;
         Ok(())
     }
 
@@ -68,6 +71,11 @@ pub struct Oracle {
     is_invalid: bool,   // 1
 }
 
+#[account]
+pub struct OracleInvalidMetadata {
+    reason: String,
+}
+
 #[derive(Accounts)]
 pub struct Initialize {}
 
@@ -106,6 +114,7 @@ pub struct UpdateOracleInstruction<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(reason: String)]
 pub struct InvalidateOracleInstruction<'info> {
     #[account(
         mut,
@@ -115,6 +124,15 @@ pub struct InvalidateOracleInstruction<'info> {
         constraint = oracle.is_finished == false
     )]
     oracle: Account<'info, Oracle>,
+    #[account(
+        init,
+        payer = user,
+        space = 8 + 4 + reason.len(),
+        seeds = [oracle.key().as_ref(), b"invalid"], 
+        bump,
+        constraint = authorizer.authority == *user.key,
+    )]
+    oracle_invalid_medata: Account<'info, OracleInvalidMetadata>,
     authorizer: Account<'info, AuthorizerAccount>,
     #[account(mut)]
     user: Signer<'info>,

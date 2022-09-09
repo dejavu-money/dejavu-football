@@ -169,6 +169,7 @@ describe("dejavu-football", () => {
 
   describe('#invalidate-oracle', async () => {
     it("invalidates an oracle", async () => {
+      const reason = 'game suspended';
       // create an auhorizer
 
       const authId = new Date().getTime();
@@ -192,6 +193,12 @@ describe("dejavu-football", () => {
         program.programId
       );
 
+      // Create an oracle invalid metadata account
+      const [oracleInvalidMetadata] = await anchor.web3.PublicKey.findProgramAddress(
+        [oracle.toBuffer(), Buffer.from('invalid')],
+        program.programId
+      );
+
       await program.methods.createOracle(
         new BN(authId), // oracle id
         20, // team_a id
@@ -201,19 +208,23 @@ describe("dejavu-football", () => {
       ).accounts({
         authorizer: authorizer,
         oracle: oracle,
-        user: provider.wallet.publicKey
+        user: provider.wallet.publicKey,
       }).rpc();
 
       // invalidate oracle
 
-      await program.methods.invalidateOracle().accounts({
+      await program.methods.invalidateOracle(reason).accounts({
         authorizer: authorizer,
         oracle: oracle,
-        user: provider.wallet.publicKey
+        user: provider.wallet.publicKey,
+        oracleInvalidMedata: oracleInvalidMetadata
       }).rpc();
 
       const oracleData = await program.account.oracle.fetch(oracle);
+      const oracleInvalidData = await program.account.oracleInvalidMetadata.fetch(oracleInvalidMetadata);
+
       assert.ok(oracleData.isInvalid);
+      assert.equal(oracleInvalidData.reason, reason);
     });
   });
 
