@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{Mint, Token, TokenAccount};
+
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -55,6 +57,49 @@ pub mod dejavu_football {
     }
 }
 
+
+// Room Account and Instructions
+
+#[account]
+pub struct Room {
+    players: u8, // 1
+    oracle: Pubkey, // 32
+    created_by: Pubkey, // 32
+    mint_account: Pubkey, // 32,
+    vault_account: Pubkey, // 32,
+    is_finished: bool // 1
+}
+
+#[derive(Accounts)]
+#[instruction(timestamp: i64)]  
+pub struct CreateRoomInstruction<'info> {
+    mint: Account<'info, Mint>,
+    #[account(
+        init, 
+        payer = user, 
+        space = 8 + 1 + 32 + 32 + 32 + 32 + 1,
+        seeds = [user.key().as_ref(), format!("room-{}", timestamp).as_bytes().as_ref()], 
+        bump
+    )]
+    room: Account<'info, Room>,
+    #[account(
+        init,
+        payer = user,
+        token::mint = mint,
+        token::authority = room,
+        seeds = [room.key().as_ref(), b"vault".as_ref()],
+        bump
+    )]
+    vault_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    user: Signer<'info>,
+    system_program: Program<'info, System>,
+    token_program: Program<'info, Token>,
+    rent: Sysvar<'info, Rent>
+}
+
+
+// Oracle Account and Instructions
 #[account]
 pub struct AuthorizerAccount {
     authority: Pubkey, // 32
@@ -75,9 +120,6 @@ pub struct Oracle {
 pub struct OracleInvalidMetadata {
     reason: String,
 }
-
-#[derive(Accounts)]
-pub struct Initialize {}
 
 #[derive(Accounts)]
 #[instruction(oracle_id: i64)]
