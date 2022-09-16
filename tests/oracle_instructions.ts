@@ -7,27 +7,10 @@ import createAuthorizer from "./utils/create-authorizer";
 import createOracle from "./utils/create-oracle";
 import updateOracle from "./utils/update-oracle";
 
-
-describe("dejavu-football", () => {
+describe("Program Oracle methods", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
-
-  describe('#create-authorizer', async () => {
-    it("creates an authorizer", async () => {
-      const authId = new Date().getTime();
-      const { authorizer } = await createAuthorizer(program, {
-        user: provider.wallet.publicKey,
-        authId
-      })
-  
-      const authorizerData = await program.account.authorizerAccount.fetch(authorizer);
-  
-      assert.ok(
-        authorizerData.authority.equals(provider.wallet.publicKey)
-      );
-    });
-  });
 
   describe('#create-oracle', async () => {
     it("creates an oracle", async () => {
@@ -195,5 +178,4 @@ describe("dejavu-football", () => {
       assert.equal(oracleInvalidData.reason, reason);
     });
   });
-
 });
