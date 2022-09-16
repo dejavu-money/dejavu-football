@@ -17,7 +17,7 @@ interface Output {
 }
 
 export default async (program: Program<DejavuFootball>, input: Input): Promise<Output> => {
-  await program.methods.updateOracle(1, 2).accounts({
+  await program.methods.updateOracle(input.teamAValue, input.teamBValue).accounts({
     authorizer: input.authorizer,
     oracle: input.oracle,
     user: input.user
