@@ -90,29 +90,34 @@ describe("Program Authorizer methods", () => {
         vualtMint,
         playerMintTokenAccount,
         payer,
-        1
-      )
+        5
+      );
 
-
-      console.log('playerMintTokenAccount');
+      console.log("playerMintTokenAccount");
       console.log(playerMintTokenAccount);
-      console.log('balance: ');
-      console.log(await (provider.connection.getTokenAccountBalance(playerMintTokenAccount)));
-
+      console.log("balance: ");
+      console.log(
+        await provider.connection.getTokenAccountBalance(playerMintTokenAccount)
+      );
 
       const roomInstruction = {
         roomId: new BN(roomId),
+        initAmount: new BN(1),
         teamAResult: 1,
         teamBResult: 2,
         playerKey: 0,
       };
 
       await program.methods
-        .createRoom(roomInstruction.roomId, [
-          roomInstruction.teamAResult,
-          roomInstruction.teamBResult,
-          roomInstruction.playerKey,
-        ])
+        .createRoom(
+          roomInstruction.roomId,
+          [
+            roomInstruction.teamAResult,
+            roomInstruction.teamBResult,
+            roomInstruction.playerKey,
+          ],
+          roomInstruction.initAmount
+        )
         .accounts({
           vaultAccount: vault,
           mint: vualtMint,
@@ -121,6 +126,7 @@ describe("Program Authorizer methods", () => {
           oracle: oracle,
           players: roomPlayers,
           playerMetadata: roomPlayerMetadata,
+          playerTokenAccount: playerMintTokenAccount,
         })
         .rpc();
 
@@ -140,6 +146,11 @@ describe("Program Authorizer methods", () => {
 
       console.log("player metadata");
       console.log(JSON.stringify(roomPlayerMetaData));
+
+      console.log("balance after: ");
+      console.log(
+        await provider.connection.getTokenAccountBalance(playerMintTokenAccount)
+      );
     });
   });
 });

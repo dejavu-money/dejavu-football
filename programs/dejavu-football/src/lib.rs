@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -59,11 +59,13 @@ pub mod dejavu_football {
         ctx: Context<CreateRoomInstruction>,
         _timestamp: i64,
         player_bet: [u8; 3],
+        init_amount: u64,
     ) -> Result<()> {
         ctx.accounts.room.oracle = ctx.accounts.oracle.key();
         ctx.accounts.room.is_finished = false;
         ctx.accounts.room.created_by = ctx.accounts.user.key();
         ctx.accounts.room.mint_account = ctx.accounts.mint.key();
+        ctx.accounts.room.init_amount = init_amount;
 
         let [team_a_result, team_b_result, player_key] = player_bet;
         ctx.accounts
@@ -71,6 +73,20 @@ pub mod dejavu_football {
             .list
             .push([team_a_result, team_b_result, player_key]);
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
+
+        // transfer
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.player_token_account.to_account_info(),
+            to: ctx.accounts.vault_account.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
+        };
+
+        let ctx_transfer = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+
+        token::transfer(ctx_transfer, init_amount)?;
+        // ctx.accounts.player_token_account.reload()?;
+        // msg!("Player account amount: {}", ctx.accounts.player_token_account.amount);
+
         Ok(())
     }
 }
@@ -83,6 +99,7 @@ pub struct Room {
     created_by: Pubkey,   // 32
     mint_account: Pubkey, // 32,
     is_finished: bool,    // 1
+    init_amount: u64,     // 8
 }
 
 #[account]
@@ -103,7 +120,7 @@ pub struct CreateRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32 + 32 + 1,
+        space = 8 + 32 + 32 + 32 + 1 + 8,
         seeds = [user.key().as_ref(), format!("room-{}", timestamp).as_bytes().as_ref()], 
         bump
     )]
@@ -138,6 +155,8 @@ pub struct CreateRoomInstruction<'info> {
     system_program: Program<'info, System>,
     token_program: Program<'info, Token>,
     rent: Sysvar<'info, Rent>,
+    #[account(mut)]
+    player_token_account: Account<'info, TokenAccount>,
 }
 
 // Oracle Account and Instructions
