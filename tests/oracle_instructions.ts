@@ -18,12 +18,11 @@
 //       const authId = new Date().getTime();
 //       const closedAt = new Date().getTime();
 //       const finishedAt = new Date().getTime() + 1;
-      
+
 //       const { authorizer } = await createAuthorizer(program, {
 //         user: provider.wallet.publicKey,
 //         authId
 //       });
-
 
 //       // create an oracle
 
@@ -68,7 +67,7 @@
 //       const authId = new Date().getTime();
 //       const closedAt = new Date().getTime();
 //       const finishedAt = new Date().getTime() + 1;
-      
+
 //       const { authorizer } = await createAuthorizer(program, {
 //         user: provider.wallet.publicKey,
 //         authId
@@ -137,7 +136,7 @@
 //       const authId = new Date().getTime();
 //       const closedAt = new Date().getTime();
 //       const finishedAt = new Date().getTime() + 1;
-      
+
 //       const { authorizer } = await createAuthorizer(program, {
 //         user: provider.wallet.publicKey,
 //         authId
@@ -156,7 +155,7 @@
 //       });
 
 //       // Create an oracle invalid metadata account
-      
+
 //       const [oracleInvalidMetadata] = await anchor.web3.PublicKey.findProgramAddress(
 //         [oracle.toBuffer(), Buffer.from('invalid')],
 //         program.programId

@@ -16,9 +16,9 @@
 //         user: provider.wallet.publicKey,
 //         authId
 //       })
-  
+
 //       const authorizerData = await program.account.authorizerAccount.fetch(authorizer);
-  
+
 //       assert.ok(
 //         authorizerData.authority.equals(provider.wallet.publicKey)
 //       );

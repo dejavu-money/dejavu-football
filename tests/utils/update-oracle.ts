@@ -3,25 +3,30 @@ import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import { BN } from "bn.js";
 
-
 interface Input {
-  authorizer: PublicKey,
-  oracle: PublicKey,
-  user: PublicKey,
-  teamAValue: number,
-  teamBValue: number
+  authorizer: PublicKey;
+  oracle: PublicKey;
+  user: PublicKey;
+  teamAValue: number;
+  teamBValue: number;
 }
 
 interface Output {
-  oracle: PublicKey
+  oracle: PublicKey;
 }
 
-export default async (program: Program<DejavuFootball>, input: Input): Promise<Output> => {
-  await program.methods.updateOracle(input.teamAValue, input.teamBValue).accounts({
-    authorizer: input.authorizer,
-    oracle: input.oracle,
-    user: input.user
-  }).rpc();
+export default async (
+  program: Program<DejavuFootball>,
+  input: Input
+): Promise<Output> => {
+  await program.methods
+    .updateOracle(input.teamAValue, input.teamBValue)
+    .accounts({
+      authorizer: input.authorizer,
+      oracle: input.oracle,
+      user: input.user,
+    })
+    .rpc();
 
   return { oracle: input.oracle };
-}
+};
