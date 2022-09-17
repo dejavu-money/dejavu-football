@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
@@ -55,33 +54,76 @@ pub mod dejavu_football {
 
         Ok(())
     }
-}
 
+    pub fn create_room(
+        ctx: Context<CreateRoomInstruction>,
+        _timestamp: i64,
+        player_bet: [u8; 3],
+    ) -> Result<()> {
+        ctx.accounts.room.oracle = ctx.accounts.oracle.key();
+        ctx.accounts.room.is_finished = false;
+        ctx.accounts.room.created_by = ctx.accounts.user.key();
+        ctx.accounts.room.mint_account = ctx.accounts.mint.key();
+
+        let [team_a_result, team_b_result, player_key] = player_bet;
+        ctx.accounts
+            .players
+            .list
+            .push([team_a_result, team_b_result, player_key]);
+        ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
+        Ok(())
+    }
+}
 
 // Room Account and Instructions
 
 #[account]
 pub struct Room {
-    players: u8, // 1
-    oracle: Pubkey, // 32
-    created_by: Pubkey, // 32
+    oracle: Pubkey,       // 32
+    created_by: Pubkey,   // 32
     mint_account: Pubkey, // 32,
-    vault_account: Pubkey, // 32,
-    is_finished: bool // 1
+    is_finished: bool,    // 1
+}
+
+#[account]
+pub struct RoomPlayerMetadata {
+    created_by: Pubkey, // 32
+}
+
+#[account]
+pub struct RoomPlayers {
+    list: Vec<[u8; 3]>, // (4 + 3) * player_counts -> [team_a_result, team_b_result, player_key]
 }
 
 #[derive(Accounts)]
-#[instruction(timestamp: i64)]  
+#[instruction(timestamp: i64, player_bet: [u8; 3])]
 pub struct CreateRoomInstruction<'info> {
+    oracle: Account<'info, Oracle>,
     mint: Account<'info, Mint>,
     #[account(
-        init, 
-        payer = user, 
-        space = 8 + 1 + 32 + 32 + 32 + 32 + 1,
+        init,
+        payer = user,
+        space = 8 + 32 + 32 + 32 + 1,
         seeds = [user.key().as_ref(), format!("room-{}", timestamp).as_bytes().as_ref()], 
         bump
     )]
     room: Account<'info, Room>,
+    #[account(
+        init,
+        payer = user,
+        space = 8 + 32,
+        seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
+        bump
+    )]
+    player_metadata: Account<'info, RoomPlayerMetadata>,
+    #[account(
+        init,
+        payer = user,
+        space = 8 + 8,
+        seeds = [room.key().as_ref(), b"players"], 
+        bump
+    )]
+    players: Account<'info, RoomPlayers>,
     #[account(
         init,
         payer = user,
@@ -95,9 +137,8 @@ pub struct CreateRoomInstruction<'info> {
     user: Signer<'info>,
     system_program: Program<'info, System>,
     token_program: Program<'info, Token>,
-    rent: Sysvar<'info, Rent>
+    rent: Sysvar<'info, Rent>,
 }
-
 
 // Oracle Account and Instructions
 #[account]
