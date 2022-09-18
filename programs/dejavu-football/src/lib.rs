@@ -61,17 +61,15 @@ pub mod dejavu_football {
         player_bet: [u8; 3],
         init_amount: u64,
     ) -> Result<()> {
+        // TODO: validate closed_at and finished_at on oracles
+
         ctx.accounts.room.oracle = ctx.accounts.oracle.key();
         ctx.accounts.room.is_finished = false;
         ctx.accounts.room.created_by = ctx.accounts.user.key();
         ctx.accounts.room.mint_account = ctx.accounts.mint.key();
         ctx.accounts.room.init_amount = init_amount;
 
-        let [team_a_result, team_b_result, player_key] = player_bet;
-        ctx.accounts
-            .players
-            .list
-            .push([team_a_result, team_b_result, player_key]);
+        ctx.accounts.players.add_bet(player_bet);
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
 
         // transfer
@@ -81,12 +79,21 @@ pub mod dejavu_football {
             authority: ctx.accounts.user.to_account_info(),
         };
 
-        let ctx_transfer = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+        let ctx_transfer =
+            CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
 
         token::transfer(ctx_transfer, init_amount)?;
         // ctx.accounts.player_token_account.reload()?;
         // msg!("Player account amount: {}", ctx.accounts.player_token_account.amount);
 
+        Ok(())
+    }
+
+    pub fn join_room(ctx: Context<JoinRoomInstruction>, player_bet: [u8; 3]) -> Result<()> {
+        // TODO: validate closed_at and finished_at on oracles
+
+        ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
+        ctx.accounts.players.add_bet(player_bet);
         Ok(())
     }
 }
@@ -110,6 +117,17 @@ pub struct RoomPlayerMetadata {
 #[account]
 pub struct RoomPlayers {
     list: Vec<[u8; 3]>, // (4 + 3) * player_counts -> [team_a_result, team_b_result, player_key]
+}
+
+impl RoomPlayers {
+    pub fn calculate_new_space(&self) -> usize {
+        let current_space = 8 * self.list.len();
+        current_space + 8 + 8
+    }
+
+    pub fn add_bet(&mut self, bet: [u8; 3]) {
+        self.list.push(bet);
+    }
 }
 
 #[derive(Accounts)]
@@ -149,6 +167,39 @@ pub struct CreateRoomInstruction<'info> {
         seeds = [room.key().as_ref(), b"vault".as_ref()],
         bump
     )]
+    vault_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    user: Signer<'info>,
+    system_program: Program<'info, System>,
+    token_program: Program<'info, Token>,
+    rent: Sysvar<'info, Rent>,
+    #[account(mut)]
+    player_token_account: Account<'info, TokenAccount>,
+}
+
+#[derive(Accounts)]
+#[instruction(player_bet: [u8; 3])]
+pub struct JoinRoomInstruction<'info> {
+    oracle: Account<'info, Oracle>,
+    mint: Account<'info, Mint>,
+    room: Account<'info, Room>,
+    #[account(
+        init,
+        payer = user,
+        space = 8 + 32,
+        seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
+        bump
+    )]
+    player_metadata: Account<'info, RoomPlayerMetadata>,
+    #[account(
+        mut,
+        seeds = [room.key().as_ref(), b"players"], 
+        bump,
+        realloc = players.calculate_new_space(),
+        realloc::payer = user,
+        realloc::zero = false,
+    )]
+    players: Account<'info, RoomPlayers>,
     vault_account: Account<'info, TokenAccount>,
     #[account(mut)]
     user: Signer<'info>,
