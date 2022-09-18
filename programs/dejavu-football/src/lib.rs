@@ -69,7 +69,7 @@ pub mod dejavu_football {
         ctx.accounts.room.mint_account = ctx.accounts.mint.key();
         ctx.accounts.room.init_amount = init_amount;
 
-        ctx.accounts.players.add_bet(player_bet);
+        ctx.accounts.players.add_bet(player_bet)?;
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
 
         // transfer
@@ -93,7 +93,8 @@ pub mod dejavu_football {
         // TODO: validate closed_at and finished_at on oracles
 
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
-        ctx.accounts.players.add_bet(player_bet);
+        ctx.accounts.players.add_bet(player_bet)?;
+
         Ok(())
     }
 }
@@ -125,8 +126,25 @@ impl RoomPlayers {
         current_space + 8 + 8
     }
 
-    pub fn add_bet(&mut self, bet: [u8; 3]) {
+    pub fn add_bet(&mut self, bet: [u8; 3]) -> Result<()> {
+        self.validate_bet(&bet)?;
         self.list.push(bet);
+
+        Ok(())
+    }
+
+    fn validate_bet(&self, new_bet: &[u8; 3]) -> Result<()> {
+        for bet in self.list.iter() {
+            let [current_team_a_value, current_team_b_value, _] = bet;
+            let [new_team_a_value, new_team_b_value, _] = new_bet;
+
+            if current_team_a_value == new_team_a_value && current_team_b_value == new_team_b_value
+            {
+                return err!(Errors::BetDuplicated);
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -306,4 +324,15 @@ pub struct CreateAuthorizerInstruction<'info> {
     #[account(mut)]
     user: Signer<'info>,
     system_program: Program<'info, System>,
+}
+
+// errors
+#[error_code]
+pub enum Errors {
+    #[msg("The current timestamp should be greater than closed_at")]
+    TimeInvalid,
+    #[msg("Oracle expired")]
+    OracleExpired,
+    #[msg("Another player has the same bet")]
+    BetDuplicated,
 }
