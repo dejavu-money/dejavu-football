@@ -23,6 +23,7 @@ pub mod dejavu_football {
         // set team ids
         ctx.accounts.oracle.results[0] = team_a_value;
         ctx.accounts.oracle.results[1] = team_b_value;
+        ctx.accounts.oracle.is_finished = true;
         Ok(())
     }
 
@@ -57,7 +58,7 @@ pub mod dejavu_football {
 
     pub fn create_room(
         ctx: Context<CreateRoomInstruction>,
-        _timestamp: i64,
+        key: i64,
         player_bet: [u8; 3],
         init_amount: u64,
     ) -> Result<()> {
@@ -68,9 +69,11 @@ pub mod dejavu_football {
         ctx.accounts.room.created_by = ctx.accounts.user.key();
         ctx.accounts.room.mint_account = ctx.accounts.mint.key();
         ctx.accounts.room.init_amount = init_amount;
+        ctx.accounts.room.key = key;
 
         ctx.accounts.players.add_bet(player_bet)?;
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
+        ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
 
         // transfer
         let cpi_accounts = Transfer {
@@ -93,7 +96,81 @@ pub mod dejavu_football {
         // TODO: validate closed_at and finished_at on oracles
 
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
+        ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
         ctx.accounts.players.add_bet(player_bet)?;
+
+        // transfer
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.player_token_account.to_account_info(),
+            to: ctx.accounts.vault_account.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
+        };
+
+        let ctx_transfer =
+            CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+
+        token::transfer(ctx_transfer, ctx.accounts.room.init_amount)?;
+
+        Ok(())
+    }
+
+    pub fn withdraw(ctx: Context<WithdrawInstruction>) -> Result<()> {
+        // TODO: validate that the oracle is finished
+        // TODO: validate that playerKey belongs to this room
+
+        // Pubkey.find_pro
+        // ctx.vau
+
+        match ctx
+            .accounts
+            .players
+            .get_winner_player_key(&ctx.accounts.oracle)
+        {
+            Some(player_key) => {
+                // validate pda
+                let (player_meta_pda, _) = Pubkey::find_program_address(
+                    &[
+                        &ctx.accounts.room.key().as_ref(),
+                        format!("player-{}", player_key).as_bytes().as_ref(),
+                    ],
+                    ctx.program_id,
+                );
+
+                if ctx.accounts.player_metadata.key() != player_meta_pda
+                    || ctx.accounts.player_metadata.created_by != ctx.accounts.user.key()
+                    || ctx.accounts.player_metadata.token_account
+                        != ctx.accounts.player_token_account.key()
+                {
+                    return err!(Errors::UnauthroizedWithdraw);
+                }
+
+                // transfer
+                let cpi_accounts = Transfer {
+                    from: ctx.accounts.vault_account.to_account_info(),
+                    to: ctx.accounts.player_token_account.to_account_info(),
+                    authority: ctx.accounts.room.to_account_info(),
+                };
+
+                let room_seed = *ctx.bumps.get("room").unwrap();
+                let ctx_transfer =
+                    CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+
+                token::transfer(
+                    ctx_transfer.with_signer(&[&&[
+                        &ctx.accounts.room.created_by.as_ref(),
+                        &format!("room-{}", ctx.accounts.room.key)
+                            .as_bytes()
+                            .as_ref()[..],
+                        &[room_seed],
+                    ][..]]),
+                    ctx.accounts.room.init_amount * ctx.accounts.players.list.len() as u64,
+                )?;
+            }
+
+            None => {
+                msg!("no winner");
+            }
+        }
 
         Ok(())
     }
@@ -106,13 +183,15 @@ pub struct Room {
     oracle: Pubkey,       // 32
     created_by: Pubkey,   // 32
     mint_account: Pubkey, // 32,
+    key: i64,             // 8
     is_finished: bool,    // 1
     init_amount: u64,     // 8
 }
 
 #[account]
 pub struct RoomPlayerMetadata {
-    created_by: Pubkey, // 32
+    created_by: Pubkey,    // 32
+    token_account: Pubkey, // 32
 }
 
 #[account]
@@ -131,6 +210,20 @@ impl RoomPlayers {
         self.list.push(bet);
 
         Ok(())
+    }
+
+    pub fn get_winner_player_key(&self, oracle: &Account<Oracle>) -> Option<u8> {
+        let players_results = self.list.iter();
+
+        for result in players_results {
+            let [a, b] = oracle.results;
+
+            if a == result[0] && b == result[1] {
+                return Some(result[2]);
+            }
+        }
+
+        None
     }
 
     fn validate_bet(&self, new_bet: &[u8; 3]) -> Result<()> {
@@ -156,7 +249,7 @@ pub struct CreateRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32 + 32 + 1 + 8,
+        space = 8 + 32 + 32 + 32 + 1 + 8 + 8,
         seeds = [user.key().as_ref(), format!("room-{}", timestamp).as_bytes().as_ref()], 
         bump
     )]
@@ -164,7 +257,7 @@ pub struct CreateRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32,
+        space = 8 + 32 + 32,
         seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
         bump
     )]
@@ -204,7 +297,7 @@ pub struct JoinRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32,
+        space = 8 + 32 + 32,
         seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
         bump
     )]
@@ -218,6 +311,7 @@ pub struct JoinRoomInstruction<'info> {
         realloc::zero = false,
     )]
     players: Account<'info, RoomPlayers>,
+    #[account(mut)]
     vault_account: Account<'info, TokenAccount>,
     #[account(mut)]
     user: Signer<'info>,
@@ -228,6 +322,24 @@ pub struct JoinRoomInstruction<'info> {
     player_token_account: Account<'info, TokenAccount>,
 }
 
+#[derive(Accounts)]
+pub struct WithdrawInstruction<'info> {
+    oracle: Account<'info, Oracle>,
+    mint: Account<'info, Mint>,
+    #[account(mut, seeds = [room.created_by.as_ref(), format!("room-{}", room.key).as_bytes().as_ref()], bump)]
+    room: Account<'info, Room>,
+    player_metadata: Account<'info, RoomPlayerMetadata>,
+    players: Account<'info, RoomPlayers>,
+    #[account(mut, seeds = [room.key().as_ref(), b"vault".as_ref()], bump)]
+    vault_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    user: Signer<'info>,
+    system_program: Program<'info, System>,
+    token_program: Program<'info, Token>,
+    rent: Sysvar<'info, Rent>,
+    #[account(mut)]
+    player_token_account: Account<'info, TokenAccount>,
+}
 // Oracle Account and Instructions
 #[account]
 pub struct AuthorizerAccount {
@@ -335,4 +447,6 @@ pub enum Errors {
     OracleExpired,
     #[msg("Another player has the same bet")]
     BetDuplicated,
+    #[msg("Unautorized Withdraw")]
+    UnauthroizedWithdraw,
 }
