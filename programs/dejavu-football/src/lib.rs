@@ -74,6 +74,7 @@ pub mod dejavu_football {
         ctx.accounts.players.add_bet(player_bet)?;
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
+        ctx.accounts.player_metadata.key = player_bet[2];
 
         // transfer
         let cpi_accounts = Transfer {
@@ -97,6 +98,7 @@ pub mod dejavu_football {
 
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
+        ctx.accounts.player_metadata.key = player_bet[2];
         ctx.accounts.players.add_bet(player_bet)?;
 
         // transfer
@@ -118,9 +120,6 @@ pub mod dejavu_football {
         // TODO: validate that the oracle is finished
         // TODO: validate that playerKey belongs to this room
 
-        // Pubkey.find_pro
-        // ctx.vau
-
         match ctx
             .accounts
             .players
@@ -139,7 +138,10 @@ pub mod dejavu_football {
                 if ctx.accounts.player_metadata.key() != player_meta_pda
                     || ctx.accounts.player_metadata.created_by != ctx.accounts.user.key()
                     || ctx.accounts.player_metadata.token_account
-                        != ctx.accounts.player_token_account.key()
+                        != ctx.accounts.player_token_account.key() ||
+                        ctx.accounts.player_metadata.withdrew ||
+                        !ctx.accounts.oracle.is_finished
+                        || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
                 {
                     return err!(Errors::UnauthroizedWithdraw);
                 }
@@ -150,6 +152,9 @@ pub mod dejavu_football {
                     to: ctx.accounts.player_token_account.to_account_info(),
                     authority: ctx.accounts.room.to_account_info(),
                 };
+
+                ctx.accounts.player_metadata.withdrew = true;
+                ctx.accounts.room.is_finished = true;
 
                 let room_seed = *ctx.bumps.get("room").unwrap();
                 let ctx_transfer =
@@ -168,7 +173,50 @@ pub mod dejavu_football {
             }
 
             None => {
-                msg!("no winner");
+                // validate pda
+                let (player_meta_pda, _) = Pubkey::find_program_address(
+                    &[
+                        &ctx.accounts.room.key().as_ref(),
+                        format!("player-{}", ctx.accounts.player_metadata.key).as_bytes().as_ref(),
+                    ],
+                    ctx.program_id,
+                );
+
+                if ctx.accounts.player_metadata.key() != player_meta_pda
+                    || ctx.accounts.player_metadata.created_by != ctx.accounts.user.key()
+                    || ctx.accounts.player_metadata.token_account
+                        != ctx.accounts.player_token_account.key() ||
+                        ctx.accounts.player_metadata.withdrew ||
+                        !ctx.accounts.oracle.is_finished
+                        || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
+                {
+                    return err!(Errors::UnauthroizedWithdraw);
+                }
+
+                ctx.accounts.player_metadata.withdrew = true;
+                ctx.accounts.room.is_finished = true;
+
+                let cpi_accounts = Transfer {
+                    from: ctx.accounts.vault_account.to_account_info(),
+                    to: ctx.accounts.player_token_account.to_account_info(),
+                    authority: ctx.accounts.room.to_account_info(),
+                };
+
+
+                let room_seed = *ctx.bumps.get("room").unwrap();
+                let ctx_transfer =
+                    CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+
+                token::transfer(
+                    ctx_transfer.with_signer(&[&&[
+                        &ctx.accounts.room.created_by.as_ref(),
+                        &format!("room-{}", ctx.accounts.room.key)
+                            .as_bytes()
+                            .as_ref()[..],
+                        &[room_seed],
+                    ][..]]),
+                    ctx.accounts.room.init_amount
+                )?;
             }
         }
 
@@ -192,6 +240,8 @@ pub struct Room {
 pub struct RoomPlayerMetadata {
     created_by: Pubkey,    // 32
     token_account: Pubkey, // 32
+    key: u8, // 1
+    withdrew: bool // 1
 }
 
 #[account]
@@ -257,7 +307,7 @@ pub struct CreateRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32,
+        space = 8 + 32 + 32 + 1 + 1,
         seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
         bump
     )]
@@ -297,7 +347,7 @@ pub struct JoinRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32,
+        space = 8 + 32 + 32 + 1 + 1,
         seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
         bump
     )]
@@ -328,6 +378,7 @@ pub struct WithdrawInstruction<'info> {
     mint: Account<'info, Mint>,
     #[account(mut, seeds = [room.created_by.as_ref(), format!("room-{}", room.key).as_bytes().as_ref()], bump)]
     room: Account<'info, Room>,
+    #[account(mut)]
     player_metadata: Account<'info, RoomPlayerMetadata>,
     players: Account<'info, RoomPlayers>,
     #[account(mut, seeds = [room.key().as_ref(), b"vault".as_ref()], bump)]
