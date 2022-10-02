@@ -1,0 +1,38 @@
+name: Rust
+
+on: [push]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Add wallet
+        run: echo $DEVNET_TEST_WALLET > id.json
+        env:
+          DEVNET_TEST_WALLET: ${{ secrets.DEVNET_TEST_WALLET }}
+      - name: Add Program Keypair
+        run: echo $ORACLE_PROGRAM_KEYPAIR_TEST > program-keypair.json
+        env:
+          ORACLE_PROGRAM_KEYPAIR_TEST: ${{ secrets.ORACLE_PROGRAM_KEYPAIR_TEST }}
+      - name: Anchor Tests
+        run: docker build -f Dockerfile.ci -t ci . && docker run ci sh ./.ci/tests.sh
+  deploy-dev:
+    needs: tests
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Add wallet
+        run: echo $DEVNET_DEV_WALLET > id.json
+        env:
+          DEVNET_DEV_WALLET: ${{ secrets.DEVNET_DEV_WALLET }}
+      - name: Add Program Keypair
+        run: echo $ORACLE_PROGRAM_KEYPAIR_DEV > program-keypair.json
+        env:
+          ORACLE_PROGRAM_KEYPAIR_DEV: ${{ secrets.ORACLE_PROGRAM_KEYPAIR_DEV }}
+      - name: Deploy to Devnet
+        run: docker build -f Dockerfile.ci -t ci . && docker run ci sh ./.ci/deploy-dev.sh
