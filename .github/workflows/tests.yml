@@ -11,13 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Add wallet
-        run: echo $DEVNET_TEST_WALLET > id.json
+        run: echo $WALLET > id.json
         env:
-          DEVNET_TEST_WALLET: ${{ secrets.DEVNET_TEST_WALLET }}
+          WALLET: ${{ secrets.DEVNET_DEV_WALLET }}
       - name: Add Program Keypair
-        run: echo $ORACLE_PROGRAM_KEYPAIR_TEST > program-keypair.json
+        run: echo $PROGRAM_KEYPAIR > program-keypair.json
         env:
-          ORACLE_PROGRAM_KEYPAIR_TEST: ${{ secrets.ORACLE_PROGRAM_KEYPAIR_TEST }}
+          PROGRAM_KEYPAIR: ${{ secrets.PROGRAM_KEYPAIR_DEV }}
       - name: Anchor Tests
         run: docker build -f Dockerfile.ci -t ci . && docker run ci sh ./.ci/tests.sh
   deploy-dev:
@@ -31,8 +31,8 @@ jobs:
         env:
           DEVNET_DEV_WALLET: ${{ secrets.DEVNET_DEV_WALLET }}
       - name: Add Program Keypair
-        run: echo $ORACLE_PROGRAM_KEYPAIR_DEV > program-keypair.json
+        run: echo $PROGRAM_KEYPAIR > program-keypair.json
         env:
-          ORACLE_PROGRAM_KEYPAIR_DEV: ${{ secrets.ORACLE_PROGRAM_KEYPAIR_DEV }}
+          PROGRAM_KEYPAIR: ${{ secrets.PROGRAM_KEYPAIR_DEV }}
       - name: Deploy to Devnet
         run: docker build -f Dockerfile.ci -t ci . && docker run ci sh ./.ci/deploy-dev.sh
