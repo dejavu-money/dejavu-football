@@ -18,6 +18,10 @@ describe("Program Authorizer methods", () => {
   anchor.setProvider(provider);
   const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
 
+  // anchor.web3.Keypair.fromSecretKey()
+
+  // new anchor.web3.Keypair('3WHWwZTJbP2V5KWAMgUBzS7PKzdQU1cf7uKvPHRCppNRpwfEqCbpSauS8QtUtVfYnLFLHqBafG48438MzFLwMbYj')
+
   const payer = anchor.web3.Keypair.fromSecretKey(
     Buffer.from(
       JSON.parse(

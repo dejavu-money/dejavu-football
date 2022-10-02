@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("GYVyvTHnPuFuSFC2gtM2q6veYq1UuSpamCe1PsD2fZ4L");
 
 #[program]
 pub mod dejavu_football {
@@ -31,6 +31,7 @@ pub mod dejavu_football {
         ctx: Context<InvalidateOracleInstruction>,
         reason: String,
     ) -> Result<()> {
+        ctx.accounts.oracle.is_finished = false;
         ctx.accounts.oracle.is_invalid = true;
         ctx.accounts.oracle_invalid_medata.reason = reason;
         Ok(())
@@ -61,7 +62,7 @@ pub mod dejavu_football {
         key: i64,
         player_bet: [u8; 3],
         init_amount: u64,
-    ) -> Result<()> {        
+    ) -> Result<()> {
         // validations
         ctx.accounts.oracle.validate()?;
 
@@ -138,10 +139,10 @@ pub mod dejavu_football {
                 if ctx.accounts.player_metadata.key() != player_meta_pda
                     || ctx.accounts.player_metadata.created_by != ctx.accounts.user.key()
                     || ctx.accounts.player_metadata.token_account
-                        != ctx.accounts.player_token_account.key() ||
-                        ctx.accounts.player_metadata.withdrew ||
-                        !ctx.accounts.oracle.is_finished
-                        || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
+                        != ctx.accounts.player_token_account.key()
+                    || ctx.accounts.player_metadata.withdrew
+                    || !ctx.accounts.oracle.is_finished
+                    || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
                 {
                     return err!(Errors::UnauthroizedWithdraw);
                 }
@@ -177,7 +178,9 @@ pub mod dejavu_football {
                 let (player_meta_pda, _) = Pubkey::find_program_address(
                     &[
                         &ctx.accounts.room.key().as_ref(),
-                        format!("player-{}", ctx.accounts.player_metadata.key).as_bytes().as_ref(),
+                        format!("player-{}", ctx.accounts.player_metadata.key)
+                            .as_bytes()
+                            .as_ref(),
                     ],
                     ctx.program_id,
                 );
@@ -185,10 +188,10 @@ pub mod dejavu_football {
                 if ctx.accounts.player_metadata.key() != player_meta_pda
                     || ctx.accounts.player_metadata.created_by != ctx.accounts.user.key()
                     || ctx.accounts.player_metadata.token_account
-                        != ctx.accounts.player_token_account.key() ||
-                        ctx.accounts.player_metadata.withdrew ||
-                        !ctx.accounts.oracle.is_finished
-                        || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
+                        != ctx.accounts.player_token_account.key()
+                    || ctx.accounts.player_metadata.withdrew
+                    || !ctx.accounts.oracle.is_finished
+                    || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
                 {
                     return err!(Errors::UnauthroizedWithdraw);
                 }
@@ -202,7 +205,6 @@ pub mod dejavu_football {
                     authority: ctx.accounts.room.to_account_info(),
                 };
 
-
                 let room_seed = *ctx.bumps.get("room").unwrap();
                 let ctx_transfer =
                     CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
@@ -215,7 +217,7 @@ pub mod dejavu_football {
                             .as_ref()[..],
                         &[room_seed],
                     ][..]]),
-                    ctx.accounts.room.init_amount
+                    ctx.accounts.room.init_amount,
                 )?;
             }
         }
@@ -240,8 +242,8 @@ pub struct Room {
 pub struct RoomPlayerMetadata {
     created_by: Pubkey,    // 32
     token_account: Pubkey, // 32
-    key: u8, // 1
-    withdrew: bool // 1
+    key: u8,               // 1
+    withdrew: bool,        // 1
 }
 
 #[account]
@@ -253,8 +255,9 @@ impl Oracle {
     pub fn validate(&self) -> Result<()> {
         let timestamp = Clock::get()?.unix_timestamp;
 
-        msg!("current time {:?}", timestamp);
-        msg!("closed at {:?}", self.closed_at);
+        if self.is_invalid {
+            return err!(Errors::OracleInvalid);
+        }
 
         if timestamp >= self.closed_at {
             return err!(Errors::OracleExpired);
@@ -507,10 +510,10 @@ pub struct CreateAuthorizerInstruction<'info> {
 // errors
 #[error_code]
 pub enum Errors {
-    #[msg("The current timestamp should be greater than closed_at")]
-    TimeInvalid,
     #[msg("Oracle expired")]
     OracleExpired,
+    #[msg("the oracle was marked as invalid")]
+    OracleInvalid,
     #[msg("Another player has the same bet")]
     BetDuplicated,
     #[msg("Unautorized Withdraw")]
