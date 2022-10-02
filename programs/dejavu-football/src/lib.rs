@@ -61,8 +61,9 @@ pub mod dejavu_football {
         key: i64,
         player_bet: [u8; 3],
         init_amount: u64,
-    ) -> Result<()> {
-        // TODO: validate closed_at and finished_at on oracles
+    ) -> Result<()> {        
+        // validations
+        ctx.accounts.oracle.validate()?;
 
         ctx.accounts.room.oracle = ctx.accounts.oracle.key();
         ctx.accounts.room.is_finished = false;
@@ -87,14 +88,13 @@ pub mod dejavu_football {
             CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
 
         token::transfer(ctx_transfer, init_amount)?;
-        // ctx.accounts.player_token_account.reload()?;
-        // msg!("Player account amount: {}", ctx.accounts.player_token_account.amount);
 
         Ok(())
     }
 
     pub fn join_room(ctx: Context<JoinRoomInstruction>, player_bet: [u8; 3]) -> Result<()> {
-        // TODO: validate closed_at and finished_at on oracles
+        // validations
+        ctx.accounts.oracle.validate()?;
 
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
@@ -247,6 +247,21 @@ pub struct RoomPlayerMetadata {
 #[account]
 pub struct RoomPlayers {
     list: Vec<[u8; 3]>, // (4 + 3) * player_counts -> [team_a_result, team_b_result, player_key]
+}
+
+impl Oracle {
+    pub fn validate(&self) -> Result<()> {
+        let timestamp = Clock::get()?.unix_timestamp;
+
+        msg!("current time {:?}", timestamp);
+        msg!("closed at {:?}", self.closed_at);
+
+        if timestamp >= self.closed_at {
+            return err!(Errors::OracleExpired);
+        }
+
+        Ok(())
+    }
 }
 
 impl RoomPlayers {

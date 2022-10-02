@@ -40,8 +40,8 @@ describe("Program Authorizer methods", () => {
       });
 
      
-      const closedAt = new Date().getTime();
-      const finishedAt = new Date().getTime() + 1;
+      const closedAt = Math.floor(Date.now() / 1000) + 60;
+      const finishedAt = Math.floor(Date.now() / 1000);
 
        // create oracle
       const { oracle } = await createOracle(program, {
@@ -184,8 +184,8 @@ describe("Program Authorizer methods", () => {
       });
 
       // create oracle
-      const closedAt = new Date().getTime();
-      const finishedAt = new Date().getTime() + 1;
+      const closedAt = Math.floor(Date.now() / 1000) + 60;
+      const finishedAt = Math.floor(Date.now() / 1000);
       const { oracle } = await createOracle(program, {
         teamAId: 1,
         teamBId: 2,
