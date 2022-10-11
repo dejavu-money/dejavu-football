@@ -77,6 +77,7 @@ pub mod dejavu_football {
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
         ctx.accounts.player_metadata.key = player_bet[2];
+        ctx.accounts.player_metadata.room = ctx.accounts.room.key();
 
         // transfer
         let cpi_accounts = Transfer {
@@ -98,6 +99,7 @@ pub mod dejavu_football {
         ctx.accounts.oracle.validate()?;
 
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
+        ctx.accounts.player_metadata.room = ctx.accounts.room.key();
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
         ctx.accounts.player_metadata.key = player_bet[2];
         ctx.accounts.players.add_bet(player_bet)?;
@@ -240,6 +242,7 @@ pub struct Room {
 
 #[account]
 pub struct RoomPlayerMetadata {
+    room: Pubkey,          // 32
     created_by: Pubkey,    // 32
     token_account: Pubkey, // 32
     key: u8,               // 1
@@ -325,7 +328,7 @@ pub struct CreateRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32 + 1 + 1,
+        space = 8 + 32+ 32 + 32 + 1 + 1,
         seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
         bump
     )]
@@ -365,7 +368,7 @@ pub struct JoinRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32 + 1 + 1,
+        space = 8 + 32 + 32 + 32 + 1 + 1,
         seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
         bump
     )]
@@ -424,6 +427,7 @@ pub struct Oracle {
     finished_at: i64,   // 8
     is_finished: bool,  // 1
     is_invalid: bool,   // 1
+    context: u8        // 1
 }
 
 #[account]
@@ -437,7 +441,7 @@ pub struct CreateOracleInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 2 + 2 + 8 + 8 + 1 + 1,
+        space = 8 + 32 + 2 + 2 + 8 + 8 + 1 + 1 + 1,
         seeds = [authorizer.key().as_ref(), format!("id-{}", oracle_id).as_bytes().as_ref()], 
         bump,
         constraint = authorizer.authority == *user.key,
