@@ -71,6 +71,7 @@ pub mod dejavu_football {
         ctx.accounts.room.created_by = ctx.accounts.user.key();
         ctx.accounts.room.mint_account = ctx.accounts.mint.key();
         ctx.accounts.room.init_amount = init_amount;
+        ctx.accounts.room.players_count = 1;
         ctx.accounts.room.key = key;
 
         ctx.accounts.players.add_bet(player_bet)?;
@@ -102,6 +103,7 @@ pub mod dejavu_football {
         ctx.accounts.player_metadata.room = ctx.accounts.room.key();
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
         ctx.accounts.player_metadata.key = player_bet[2];
+        ctx.accounts.room.players_count += 1;
         ctx.accounts.players.add_bet(player_bet)?;
 
         // transfer
@@ -238,6 +240,7 @@ pub struct Room {
     key: i64,             // 8
     is_finished: bool,    // 1
     init_amount: u64,     // 8
+    players_count: u8     // 11
 }
 
 #[account]
@@ -320,7 +323,7 @@ pub struct CreateRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32 + 32 + 1 + 8 + 8,
+        space = 8 + 32 + 32 + 32 + 1 + 8 + 8 + 1,
         seeds = [user.key().as_ref(), format!("room-{}", timestamp).as_bytes().as_ref()], 
         bump
     )]
