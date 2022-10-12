@@ -17,11 +17,6 @@ describe("Program Authorizer methods", () => {
   //provider
   anchor.setProvider(provider);
   const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
-
-  // anchor.web3.Keypair.fromSecretKey()
-
-  // new anchor.web3.Keypair('3WHWwZTJbP2V5KWAMgUBzS7PKzdQU1cf7uKvPHRCppNRpwfEqCbpSauS8QtUtVfYnLFLHqBafG48438MzFLwMbYj')
-
   const payer = anchor.web3.Keypair.fromSecretKey(
     Buffer.from(
       JSON.parse(
@@ -124,6 +119,12 @@ describe("Program Authorizer methods", () => {
         Number(playerMintAccountBalance.value.amount),
         4,
         "checks if player mint account was decreased a token by the program"
+      );
+
+      assert.equal(
+        Number(roomData.playersCount),
+        1,
+        "checks if room player count is assigned"
       );
 
       assert.equal(
@@ -241,10 +242,8 @@ describe("Program Authorizer methods", () => {
 
       const { room, roomPlayers, vault } = response.accounts;
 
-
       // join room
 
-      
       const joinRoomResponse = await joinRoom(program, {
         inputs: {
           teamAResult: 0,
@@ -261,7 +260,7 @@ describe("Program Authorizer methods", () => {
           vaultAccount: vault
         }
       });
-
+      const roomData = await program.account.room.fetch(room);
       const { joinPlayerMetadata } = joinRoomResponse.accounts;
 
 
@@ -281,6 +280,12 @@ describe("Program Authorizer methods", () => {
           playerMintTokenAccount
         );
       
+      assert.equal(
+        Number(roomData.playersCount),
+        2,
+        "checks if room player count is assigned"
+      );
+
       assert.equal(
         Number(vaultMintAccountBalance.value.amount),
         2,

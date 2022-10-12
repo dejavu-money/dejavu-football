@@ -103,7 +103,7 @@ pub mod dejavu_football {
         ctx.accounts.player_metadata.room = ctx.accounts.room.key();
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
         ctx.accounts.player_metadata.key = player_bet[2];
-        ctx.accounts.room.players_count += 1;
+        ctx.accounts.room.players_count = 2;
         ctx.accounts.players.add_bet(player_bet)?;
 
         // transfer
@@ -367,6 +367,7 @@ pub struct CreateRoomInstruction<'info> {
 pub struct JoinRoomInstruction<'info> {
     oracle: Account<'info, Oracle>,
     mint: Account<'info, Mint>,
+    #[account(mut)]
     room: Account<'info, Room>,
     #[account(
         init,
