@@ -36,6 +36,8 @@ describe("Program Authorizer methods", () => {
       const { authorizer } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
         authId,
+        connection: provider.connection,
+        payerSign: payer
       });
 
      
@@ -186,6 +188,8 @@ describe("Program Authorizer methods", () => {
       const { authorizer } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
         authId,
+        connection: provider.connection,
+        payerSign: payer
       });
 
       // create oracle
@@ -331,6 +335,8 @@ describe("Program Authorizer methods", () => {
       const { authorizer } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
         authId,
+        connection: provider.connection,
+        payerSign: payer
       });
 
       // create oracle
@@ -465,6 +471,8 @@ describe("Program Authorizer methods", () => {
       const { authorizer } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
         authId,
+        connection: provider.connection,
+        payerSign: payer
       });
 
       // create oracle

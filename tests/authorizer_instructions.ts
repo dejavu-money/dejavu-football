@@ -9,10 +9,22 @@ describe("Program Authorizer methods", () => {
   anchor.setProvider(provider);
   const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
 
+  const payer = anchor.web3.Keypair.fromSecretKey(
+    Buffer.from(
+      JSON.parse(
+        require("fs").readFileSync(process.env.ANCHOR_WALLET, {
+          encoding: "utf-8",
+        })
+      )
+    )
+  );
+
   describe('#create-authorizer', async () => {
     it("creates an authorizer", async () => {
       const authId = new Date().getTime();
       const { authorizer } = await createAuthorizer(program, {
+        connection: provider.connection,
+        payerSign: payer,
         user: provider.wallet.publicKey,
         authId
       })

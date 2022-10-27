@@ -11,6 +11,15 @@ describe("Program Oracle methods", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
+  const payer = anchor.web3.Keypair.fromSecretKey(
+    Buffer.from(
+      JSON.parse(
+        require("fs").readFileSync(process.env.ANCHOR_WALLET, {
+          encoding: "utf-8",
+        })
+      )
+    )
+  );
 
   describe('#create-oracle', async () => {
     it("creates an oracle", async () => {
@@ -21,7 +30,9 @@ describe("Program Oracle methods", () => {
 
       const { authorizer } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
-        authId
+        authId,
+        connection: provider.connection,
+        payerSign: payer
       });
 
       // create an oracle
@@ -70,7 +81,9 @@ describe("Program Oracle methods", () => {
 
       const { authorizer } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
-        authId
+        authId,
+        connection: provider.connection,
+        payerSign: payer
       })
 
       // create an oracle
@@ -139,7 +152,9 @@ describe("Program Oracle methods", () => {
 
       const { authorizer } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
-        authId
+        authId,
+        connection: provider.connection,
+        payerSign: payer
       })
 
       // create an oracle

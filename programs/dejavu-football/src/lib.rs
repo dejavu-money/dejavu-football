@@ -92,6 +92,8 @@ pub mod dejavu_football {
 
         token::transfer(ctx_transfer, init_amount)?;
 
+
+
         Ok(())
     }
 
@@ -420,6 +422,7 @@ pub struct WithdrawInstruction<'info> {
 #[account]
 pub struct AuthorizerAccount {
     authority: Pubkey, // 32
+    mintAccount: Pubkey // 32
 }
 
 #[account]
@@ -505,14 +508,35 @@ pub struct CreateAuthorizerInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32,
+        space = 8 + 32 + 32,
         seeds = [user.key().as_ref(), format!("id-{}", auth_id).as_bytes().as_ref()], 
         bump
     )]
     authorizer: Account<'info, AuthorizerAccount>,
+    #[account(
+        init,
+        payer = user,
+        token::mint = mint,
+        token::authority = user,
+        seeds = [authorizer.key().as_ref(), b"vault".as_ref()],
+        bump
+    )]
+    vault_account: Account<'info, TokenAccount>,
+    #[account(
+        init,
+        payer = user,
+        token::mint = mint,
+        token::authority = user,
+        seeds = [authorizer.key().as_ref(), b"events".as_ref()],
+        bump
+    )]
+    events_account: Account<'info, TokenAccount>,
     #[account(mut)]
     user: Signer<'info>,
     system_program: Program<'info, System>,
+    token_program: Program<'info, Token>,
+    rent: Sysvar<'info, Rent>,
+    mint: Account<'info, Mint>
 }
 
 // errors
