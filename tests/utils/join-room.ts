@@ -10,6 +10,7 @@ interface Input {
     playerKey: number;
   },
   accounts: {
+    authorizer: PublicKey;
     user: PublicKey;
     room: PublicKey;
     roomPlayers: PublicKey;
@@ -40,6 +41,7 @@ export default async (
       await program.methods
         .joinRoom([input.inputs.teamAResult, input.inputs.teamBResult, input.inputs.playerKey])
         .accounts({
+          authorizer: input.accounts.authorizer,
           mint: input.accounts.vaultMint,
           room: input.accounts.room,
           oracle: input.accounts.oracle,

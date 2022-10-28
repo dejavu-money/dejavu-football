@@ -2,6 +2,7 @@ import { DejavuFootball } from "../../target/types/dejavu_football";
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import { BN } from "bn.js";
+import * as Token from "@solana/spl-token";
 
 interface Input {
   inputs: {
@@ -15,6 +16,7 @@ interface Input {
     user: PublicKey;
     vaultMint: PublicKey;
     oracle: PublicKey;
+    authorizer: PublicKey;
     playerMintTokenAccount: PublicKey;
   }
 }
@@ -33,6 +35,8 @@ export default async (
   input: Input
 ): Promise<Output> => {
 
+  // const authorizer = await program.account.authorizerAccount.fetch(input.accounts.authorizer);
+
   const [room] = await anchor.web3.PublicKey.findProgramAddress(
     [input.accounts.user.toBuffer(), Buffer.from(`room-${input.inputs.roomId}`)],
     program.programId
@@ -49,12 +53,17 @@ export default async (
     program.programId
   );
 
+  // console.log(authorizer.mint.toString());
+
+  // program.
+
   const [roomPlayerMetadata] =
         await anchor.web3.PublicKey.findProgramAddress(
           [room.toBuffer(), Buffer.from("player-0")],
           program.programId
         );
   
+        // console.log(authorizer);
   await program.methods
         .createRoom(
           new BN(input.inputs.roomId),
@@ -68,6 +77,7 @@ export default async (
         .accounts({
           vaultAccount: vault,
           mint: input.accounts.vaultMint,
+          authorizer: input.accounts.authorizer,
           room: room,
           user: input.accounts.user,
           oracle: input.accounts.oracle,

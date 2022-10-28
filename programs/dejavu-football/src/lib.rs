@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 declare_id!("GYVyvTHnPuFuSFC2gtM2q6veYq1UuSpamCe1PsD2fZ4L");
+const PLAYER_METADATA_VERSION: i16 = 0;
 
 #[program]
 pub mod dejavu_football {
@@ -12,6 +13,7 @@ pub mod dejavu_football {
         _auth_id: i64,
     ) -> Result<()> {
         ctx.accounts.authorizer.authority = *ctx.accounts.user.key;
+        ctx.accounts.authorizer.mint =  ctx.accounts.mint.key();
         Ok(())
     }
 
@@ -67,9 +69,8 @@ pub mod dejavu_football {
         ctx.accounts.oracle.validate()?;
 
         ctx.accounts.room.oracle = ctx.accounts.oracle.key();
-        ctx.accounts.room.is_finished = false;
         ctx.accounts.room.created_by = ctx.accounts.user.key();
-        ctx.accounts.room.mint_account = ctx.accounts.mint.key();
+        ctx.accounts.room.is_finished = false;
         ctx.accounts.room.init_amount = init_amount;
         ctx.accounts.room.players_count = 1;
         ctx.accounts.room.key = key;
@@ -78,7 +79,8 @@ pub mod dejavu_football {
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
         ctx.accounts.player_metadata.key = player_bet[2];
-        ctx.accounts.player_metadata.room = ctx.accounts.room.key();
+        ctx.accounts.player_metadata.room_key = key;
+        ctx.accounts.player_metadata.version = PLAYER_METADATA_VERSION;
 
         // transfer
         let cpi_accounts = Transfer {
@@ -101,11 +103,12 @@ pub mod dejavu_football {
         // validations
         ctx.accounts.oracle.validate()?;
 
+        ctx.accounts.player_metadata.version = PLAYER_METADATA_VERSION;
         ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
-        ctx.accounts.player_metadata.room = ctx.accounts.room.key();
+        ctx.accounts.player_metadata.room_key = ctx.accounts.room.key;
         ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
         ctx.accounts.player_metadata.key = player_bet[2];
-        ctx.accounts.room.players_count = 2;
+        ctx.accounts.room.players_count += 1;
         ctx.accounts.players.add_bet(player_bet)?;
 
         // transfer
@@ -238,7 +241,6 @@ pub mod dejavu_football {
 pub struct Room {
     oracle: Pubkey,       // 32
     created_by: Pubkey,   // 32
-    mint_account: Pubkey, // 32,
     key: i64,             // 8
     is_finished: bool,    // 1
     init_amount: u64,     // 8
@@ -247,7 +249,8 @@ pub struct Room {
 
 #[account]
 pub struct RoomPlayerMetadata {
-    room: Pubkey,          // 32
+    version: i16,           // 2
+    room_key: i64,          // 8
     created_by: Pubkey,    // 32
     token_account: Pubkey, // 32
     key: u8,               // 1
@@ -327,13 +330,15 @@ pub struct CreateRoomInstruction<'info> {
         payer = user,
         space = 8 + 32 + 32 + 32 + 1 + 8 + 8 + 1,
         seeds = [user.key().as_ref(), format!("room-{}", timestamp).as_bytes().as_ref()], 
-        bump
+        bump,
+        constraint = mint.key() == authorizer.mint,
+        constraint = oracle.authorizer.key() == authorizer.key()
     )]
     room: Account<'info, Room>,
     #[account(
         init,
         payer = user,
-        space = 8 + 32+ 32 + 32 + 1 + 1,
+        space = 8 + 32+ 32 + 8 + 1 + 1 + 2,
         seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
         bump
     )]
@@ -361,12 +366,14 @@ pub struct CreateRoomInstruction<'info> {
     token_program: Program<'info, Token>,
     rent: Sysvar<'info, Rent>,
     #[account(mut)]
-    player_token_account: Account<'info, TokenAccount>,
+    player_token_account: Box<Account<'info, TokenAccount>>,
+    authorizer: Box<Account<'info, AuthorizerAccount>>
 }
 
 #[derive(Accounts)]
 #[instruction(player_bet: [u8; 3])]
 pub struct JoinRoomInstruction<'info> {
+    authorizer: Box<Account<'info, AuthorizerAccount>>,
     oracle: Account<'info, Oracle>,
     mint: Account<'info, Mint>,
     #[account(mut)]
@@ -374,9 +381,11 @@ pub struct JoinRoomInstruction<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32 + 32 + 1 + 1,
+        space = 8 + 32 + 32 + 8 + 1 + 1 + 2,
         seeds = [room.key().as_ref(), format!("player-{}", player_bet[2]).as_bytes().as_ref()], 
-        bump
+        bump,
+        constraint = mint.key() == authorizer.mint,
+        constraint = oracle.authorizer.key() == authorizer.key()
     )]
     player_metadata: Account<'info, RoomPlayerMetadata>,
     #[account(
@@ -422,7 +431,7 @@ pub struct WithdrawInstruction<'info> {
 #[account]
 pub struct AuthorizerAccount {
     authority: Pubkey, // 32
-    mintAccount: Pubkey // 32
+    mint: Pubkey // 32
 }
 
 #[account]
@@ -517,7 +526,7 @@ pub struct CreateAuthorizerInstruction<'info> {
         init,
         payer = user,
         token::mint = mint,
-        token::authority = user,
+        token::authority = authorizer,
         seeds = [authorizer.key().as_ref(), b"vault".as_ref()],
         bump
     )]
@@ -526,7 +535,7 @@ pub struct CreateAuthorizerInstruction<'info> {
         init,
         payer = user,
         token::mint = mint,
-        token::authority = user,
+        token::authority = authorizer,
         seeds = [authorizer.key().as_ref(), b"events".as_ref()],
         bump
     )]
@@ -542,12 +551,8 @@ pub struct CreateAuthorizerInstruction<'info> {
 // errors
 #[error_code]
 pub enum Errors {
-    #[msg("Oracle expired")]
     OracleExpired,
-    #[msg("the oracle was marked as invalid")]
     OracleInvalid,
-    #[msg("Another player has the same bet")]
     BetDuplicated,
-    #[msg("Unautorized Withdraw")]
     UnauthroizedWithdraw,
 }

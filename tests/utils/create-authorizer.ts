@@ -9,6 +9,7 @@ interface Input {
   connection: Connection;
   payerSign: Signer;
   user: PublicKey;
+  mint?: PublicKey,
   authId: number;
 }
 
@@ -36,10 +37,7 @@ export default async (
     program.programId
   );
 
-  // program.connection
-  //  program.
-
-  const token = await createToken({
+  const mint = input.mint || (await createToken({
     inputs: {
       connection: input.connection,
       amount: 2
@@ -49,16 +47,14 @@ export default async (
       payer: input.user,
       payerSign: input.payerSign
     }
-  })
-
-
+  })).accounts.mint;
 
   await program.methods
     .createAuthorizer(new BN(input.authId))
     .accounts({
       authorizer: authorizer,
       user: input.user,
-      mint: token.accounts.mint,
+      mint: mint,
       vaultAccount: vaultAccount,
       eventsAccount: eventsAccount
     })
