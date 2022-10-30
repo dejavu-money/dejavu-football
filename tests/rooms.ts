@@ -1,25 +1,17 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { DejavuFootball } from "../target/types/dejavu_football";
-import { assert } from "chai";
 import createAuthorizer from "./utils/create-authorizer";
-import * as Token from "@solana/spl-token";
+import { assert } from "chai";
 import { BN } from "bn.js";
 import createOracle from "./utils/create-oracle";
-import createRoom from "./utils/create-room";
-import joinRoom from "./utils/join-room";
-import createToken from "./utils/create-token";
 import updateOracle from "./utils/update-oracle";
+import createRoom from "./utils/create-room";
+import createToken from "./utils/create-token";
+import joinRoom from "./utils/join-room";
 
-describe("Program Authorizer methods", () => {
-  // anchor.AnchorProvide
+describe("dejavu-solana", () => {
   const provider = anchor.AnchorProvider.env();
-  
-  //provider
-  anchor.setProvider(provider);
-  const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
-
-  // program.account.authorizerAccount.fetch()
   const payer = anchor.web3.Keypair.fromSecretKey(
     Buffer.from(
       JSON.parse(
@@ -30,21 +22,25 @@ describe("Program Authorizer methods", () => {
     )
   );
 
+  anchor.setProvider(provider);
+
+  const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
+
   describe("#create-room", async () => {
     it("creates a room", async () => {
       const authId = new Date().getTime();
       const roomId = new Date().getTime();
 
-       // create token
-       const token = await createToken({
+      // create token
+      const token = await createToken({
         inputs: {
           connection: provider.connection,
-          amount: 5
+          amount: 5,
         },
         accounts: {
           payerSign: payer,
-          payer: payer.publicKey
-        }
+          payer: payer.publicKey,
+        },
       });
 
       // create auth
@@ -53,13 +49,13 @@ describe("Program Authorizer methods", () => {
         authId,
         connection: provider.connection,
         payerSign: payer,
-        mint: token.accounts.mint
+        mint: token.accounts.mint,
       });
-     
+
       const closedAt = Math.floor(Date.now() / 1000) + 60;
       const finishedAt = Math.floor(Date.now() / 1000);
 
-       // create oracle
+      // create oracle
       const { oracle } = await createOracle(program, {
         teamAId: 1,
         teamBId: 2,
@@ -70,7 +66,8 @@ describe("Program Authorizer methods", () => {
         authId,
       });
 
-      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint  } = token.accounts;
+      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint } =
+        token.accounts;
 
       const roomInstruction = {
         roomId: roomId,
@@ -87,18 +84,19 @@ describe("Program Authorizer methods", () => {
           teamAResult: roomInstruction.teamAResult,
           teamBResult: roomInstruction.teamBResult,
           playerKey: roomInstruction.playerKey,
-          initAmount: roomInstruction.initAmount
+          initAmount: roomInstruction.initAmount,
         },
         accounts: {
           user: provider.wallet.publicKey,
-          vaultMint: vaultMint, 
+          vaultMint: vaultMint,
           oracle: oracle,
           authorizer: authorizer,
-          playerMintTokenAccount: playerMintTokenAccount
-        }
+          playerMintTokenAccount: playerMintTokenAccount,
+        },
       });
 
-      const { room, roomPlayers, roomPlayerMetadata, vault } = response.accounts;
+      const { room, roomPlayers, roomPlayerMetadata, vault } =
+        response.accounts;
 
       const roomData = await program.account.room.fetch(room);
       const roomPlayerData = await program.account.roomPlayers.fetch(
@@ -108,11 +106,8 @@ describe("Program Authorizer methods", () => {
         roomPlayerMetadata
       );
 
-
       const vaultMintAccountBalance =
-        await provider.connection.getTokenAccountBalance(
-          vault
-        );
+        await provider.connection.getTokenAccountBalance(vault);
 
       const playerMintAccountBalance =
         await provider.connection.getTokenAccountBalance(
@@ -143,10 +138,7 @@ describe("Program Authorizer methods", () => {
         roomData.isFinished === false,
         "checks if the attr is_finished is set false when the room is initialized"
       );
-      assert.ok(
-        roomData.createdBy.equals(provider.wallet.publicKey),
-        "checks if the attr created_by is setted with the signer account"
-      );
+
       assert.ok(
         roomData.oracle.equals(oracle),
         "checks if the oracle is assigned on the room account"
@@ -187,14 +179,13 @@ describe("Program Authorizer methods", () => {
       const token = await createToken({
         inputs: {
           connection: provider.connection,
-          amount: 5
+          amount: 5,
         },
         accounts: {
           payerSign: payer,
-          payer: payer.publicKey
-        }
+          payer: payer.publicKey,
+        },
       });
-
 
       // create auth
       const { authorizer } = await createAuthorizer(program, {
@@ -202,7 +193,7 @@ describe("Program Authorizer methods", () => {
         authId,
         connection: provider.connection,
         payerSign: payer,
-        mint: token.accounts.mint
+        mint: token.accounts.mint,
       });
 
       // create oracle
@@ -218,7 +209,8 @@ describe("Program Authorizer methods", () => {
         authId,
       });
 
-      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint  } = token.accounts;
+      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint } =
+        token.accounts;
 
       const roomInstruction = {
         roomId: roomId,
@@ -235,15 +227,15 @@ describe("Program Authorizer methods", () => {
           teamAResult: roomInstruction.teamAResult,
           teamBResult: roomInstruction.teamBResult,
           playerKey: roomInstruction.playerKey,
-          initAmount: roomInstruction.initAmount
+          initAmount: roomInstruction.initAmount,
         },
         accounts: {
           authorizer: authorizer,
           user: provider.wallet.publicKey,
-          vaultMint: vaultMint, 
-          oracle: oracle, 
-          playerMintTokenAccount: playerMintTokenAccount
-        }
+          vaultMint: vaultMint,
+          oracle: oracle,
+          playerMintTokenAccount: playerMintTokenAccount,
+        },
       });
 
       const { room, roomPlayers, vault } = response.accounts;
@@ -254,7 +246,7 @@ describe("Program Authorizer methods", () => {
         inputs: {
           teamAResult: 0,
           teamBResult: 0,
-          playerKey: 1
+          playerKey: 1,
         },
         accounts: {
           authorizer: authorizer,
@@ -264,12 +256,11 @@ describe("Program Authorizer methods", () => {
           vaultMint,
           oracle,
           playerMintTokenAccount,
-          vaultAccount: vault
-        }
+          vaultAccount: vault,
+        },
       });
       const roomData = await program.account.room.fetch(room);
       const { joinPlayerMetadata } = joinRoomResponse.accounts;
-
 
       let roomPlayerData = await program.account.roomPlayers.fetch(roomPlayers);
 
@@ -278,15 +269,13 @@ describe("Program Authorizer methods", () => {
       );
 
       const vaultMintAccountBalance =
-        await provider.connection.getTokenAccountBalance(
-          vault
-        );
+        await provider.connection.getTokenAccountBalance(vault);
 
       const playerMintAccountBalance =
         await provider.connection.getTokenAccountBalance(
           playerMintTokenAccount
         );
-      
+
       assert.equal(
         Number(roomData.playersCount),
         2,
@@ -300,9 +289,9 @@ describe("Program Authorizer methods", () => {
       );
 
       assert.equal(
-          Number(playerMintAccountBalance.value.amount),
-          3,
-          "checks if player mint account was decreased a token by the program"
+        Number(playerMintAccountBalance.value.amount),
+        3,
+        "checks if player mint account was decreased a token by the program"
       );
 
       assert.equal(
@@ -327,31 +316,32 @@ describe("Program Authorizer methods", () => {
     });
   });
 
-
   describe("#withdraw", async () => {
     it("withdraws all the funds because the player won the bet", async () => {
       const authId = new Date().getTime();
       const roomId = new Date().getTime();
 
+      const playerInitBalance = 1000000 * 20 // 20$;
       // create token
       const token = await createToken({
         inputs: {
           connection: provider.connection,
-          amount: 5
+          amount: playerInitBalance,
+          decimals: 6
         },
         accounts: {
           payerSign: payer,
-          payer: payer.publicKey
-        }
+          payer: payer.publicKey,
+        },
       });
 
       // create auth
-      const { authorizer } = await createAuthorizer(program, {
+      const { authorizer, vaultAccount: authorizerVaultAccount } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
         authId,
         connection: provider.connection,
         payerSign: payer,
-        mint: token.accounts.mint
+        mint: token.accounts.mint,
       });
 
       // create oracle
@@ -367,11 +357,12 @@ describe("Program Authorizer methods", () => {
         authId,
       });
 
-      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint  } = token.accounts;
+      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint } =
+        token.accounts;
 
       const roomInstruction = {
         roomId: roomId,
-        initAmount: 1,
+        initAmount: 1000000,
         teamAResult: 1,
         teamBResult: 2,
         playerKey: 0,
@@ -384,28 +375,26 @@ describe("Program Authorizer methods", () => {
           teamAResult: roomInstruction.teamAResult,
           teamBResult: roomInstruction.teamBResult,
           playerKey: roomInstruction.playerKey,
-          initAmount: roomInstruction.initAmount
+          initAmount: roomInstruction.initAmount,
         },
         accounts: {
           authorizer: authorizer,
           user: provider.wallet.publicKey,
-          vaultMint: vaultMint, 
-          oracle: oracle, 
-          playerMintTokenAccount: playerMintTokenAccount
-        }
+          vaultMint: vaultMint,
+          oracle: oracle,
+          playerMintTokenAccount: playerMintTokenAccount,
+        },
       });
 
       const { room, roomPlayers, vault } = response.accounts;
 
-
       // join room
 
-      
       const joinRoomResponse = await joinRoom(program, {
         inputs: {
           teamAResult: 2,
           teamBResult: 2,
-          playerKey: 1
+          playerKey: 1,
         },
         accounts: {
           authorizer: authorizer,
@@ -415,8 +404,8 @@ describe("Program Authorizer methods", () => {
           vaultMint,
           oracle,
           playerMintTokenAccount,
-          vaultAccount: vault
-        }
+          vaultAccount: vault,
+        },
       });
 
       const { joinPlayerMetadata } = joinRoomResponse.accounts;
@@ -428,42 +417,42 @@ describe("Program Authorizer methods", () => {
         teamAValue: 2,
         teamBValue: 2,
         oracle,
-        authorizer
-      }
-    );
+        authorizer,
+      });
 
-    await program.methods.withdraw()
-    .accounts({
-      oracle: oracle,
-      mint: vaultMint,
-      room: room,
-      playerMetadata: joinPlayerMetadata,
-      players: roomPlayers,
-      vaultAccount: vault,
-      playerTokenAccount: playerMintTokenAccount
-
-    }).rpc();
+      await program.methods
+        .withdraw()
+        .accounts({
+          authorizer: authorizer,
+          oracle: oracle,
+          mint: vaultMint,
+          room: room,
+          playerMetadata: joinPlayerMetadata,
+          players: roomPlayers,
+          vaultAccount: vault,
+          playerTokenAccount: playerMintTokenAccount,
+          authorizerVaultAccount: authorizerVaultAccount
+        })
+        .rpc();
 
       const vaultMintAccountBalance =
-        await provider.connection.getTokenAccountBalance(
-          vault
-        );
+        await provider.connection.getTokenAccountBalance(vault);
 
       const playerMintAccountBalance =
         await provider.connection.getTokenAccountBalance(
           playerMintTokenAccount
         );
-      
+
       assert.equal(
         Number(vaultMintAccountBalance.value.amount),
         0,
-        "checks if room vault account was increased a token by the program"
+        "checks if room vault account was decreased"
       );
 
       assert.equal(
-          Number(playerMintAccountBalance.value.amount),
-          5,
-          "checks if player mint account was decreased a token by the program"
+        Number(playerMintAccountBalance.value.amount),
+        playerInitBalance - (roomInstruction.initAmount * 2 * 0.5) as number,
+        "checks if player token account was increased"
       );
     });
 
@@ -475,22 +464,21 @@ describe("Program Authorizer methods", () => {
       const token = await createToken({
         inputs: {
           connection: provider.connection,
-          amount: 5
+          amount: 5,
         },
         accounts: {
           payerSign: payer,
-          payer: payer.publicKey
-        }
+          payer: payer.publicKey,
+        },
       });
 
-
       // create auth
-      const { authorizer } = await createAuthorizer(program, {
+      const { authorizer, vaultAccount: authorizerVaultAccount } = await createAuthorizer(program, {
         user: provider.wallet.publicKey,
         authId,
         connection: provider.connection,
         payerSign: payer,
-        mint: token.accounts.mint
+        mint: token.accounts.mint,
       });
 
       // create oracle
@@ -506,7 +494,8 @@ describe("Program Authorizer methods", () => {
         authId,
       });
 
-      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint  } = token.accounts;
+      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint } =
+        token.accounts;
 
       const roomInstruction = {
         roomId: roomId,
@@ -523,28 +512,27 @@ describe("Program Authorizer methods", () => {
           teamAResult: roomInstruction.teamAResult,
           teamBResult: roomInstruction.teamBResult,
           playerKey: roomInstruction.playerKey,
-          initAmount: roomInstruction.initAmount
+          initAmount: roomInstruction.initAmount,
         },
         accounts: {
           authorizer: authorizer,
           user: provider.wallet.publicKey,
-          vaultMint: vaultMint, 
-          oracle: oracle, 
-          playerMintTokenAccount: playerMintTokenAccount
-        }
+          vaultMint: vaultMint,
+          oracle: oracle,
+          playerMintTokenAccount: playerMintTokenAccount,
+        },
       });
 
-      const { room, roomPlayers, vault, roomPlayerMetadata } = response.accounts;
-
+      const { room, roomPlayers, vault, roomPlayerMetadata } =
+        response.accounts;
 
       // join room
 
-      
       const joinRoomResponse = await joinRoom(program, {
         inputs: {
           teamAResult: 2,
           teamBResult: 2,
-          playerKey: 1
+          playerKey: 1,
         },
         accounts: {
           authorizer: authorizer,
@@ -554,8 +542,8 @@ describe("Program Authorizer methods", () => {
           vaultMint,
           oracle,
           playerMintTokenAccount,
-          vaultAccount: vault
-        }
+          vaultAccount: vault,
+        },
       });
 
       const { joinPlayerMetadata } = joinRoomResponse.accounts;
@@ -567,34 +555,34 @@ describe("Program Authorizer methods", () => {
         teamAValue: 10,
         teamBValue: 10,
         oracle,
-        authorizer
-      }
-    );
+        authorizer,
+      });
 
-    await program.methods.withdraw()
-    .accounts({
-      oracle: oracle,
-      mint: vaultMint,
-      room: room,
-      playerMetadata: joinPlayerMetadata,
-      players: roomPlayers,
-      vaultAccount: vault,
-      playerTokenAccount: playerMintTokenAccount
+      await program.methods
+        .withdraw()
+        .accounts({
+          authorizer: authorizer,
+          oracle: oracle,
+          mint: vaultMint,
+          room: room,
+          playerMetadata: joinPlayerMetadata,
+          players: roomPlayers,
+          vaultAccount: vault,
+          playerTokenAccount: playerMintTokenAccount,
+          authorizerVaultAccount: authorizerVaultAccount
+        })
+        .rpc();
 
-    }).rpc();
-
-    const joinPlayerMetadataData = await program.account.roomPlayerMetadata.fetch(joinPlayerMetadata);
+      const joinPlayerMetadataData =
+        await program.account.roomPlayerMetadata.fetch(joinPlayerMetadata);
 
       const vaultMintAccountBalance =
-        await provider.connection.getTokenAccountBalance(
-          vault
-        );
+        await provider.connection.getTokenAccountBalance(vault);
 
       const playerMintAccountBalance =
         await provider.connection.getTokenAccountBalance(
           playerMintTokenAccount
         );
-      
 
       assert.ok(
         joinPlayerMetadataData.withdrew,
@@ -608,9 +596,9 @@ describe("Program Authorizer methods", () => {
       );
 
       assert.equal(
-          Number(playerMintAccountBalance.value.amount),
-          4,
-          "checks if player mint account was decreased a token by the program"
+        Number(playerMintAccountBalance.value.amount),
+        4,
+        "checks if player mint account was decreased a token by the program"
       );
     });
   });

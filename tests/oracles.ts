@@ -1,16 +1,14 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { DejavuFootball } from "../target/types/dejavu_football";
-import { BN } from "bn.js";
-import { assert } from "chai";
 import createAuthorizer from "./utils/create-authorizer";
+import { assert } from "chai";
+import { BN } from "bn.js";
 import createOracle from "./utils/create-oracle";
 import updateOracle from "./utils/update-oracle";
 
-describe("Program Oracle methods", () => {
+describe("dejavu-solana", () => {
   const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
-  const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
   const payer = anchor.web3.Keypair.fromSecretKey(
     Buffer.from(
       JSON.parse(
@@ -21,7 +19,11 @@ describe("Program Oracle methods", () => {
     )
   );
 
-  describe('#create-oracle', async () => {
+  anchor.setProvider(provider);
+
+  const program = anchor.workspace.DejavuFootball as Program<DejavuFootball>;
+
+  describe("#create-oracle", async () => {
     it("creates an oracle", async () => {
       // create an auhorizer
       const authId = new Date().getTime();
@@ -32,7 +34,7 @@ describe("Program Oracle methods", () => {
         user: provider.wallet.publicKey,
         authId,
         connection: provider.connection,
-        payerSign: payer
+        payerSign: payer,
       });
 
       // create an oracle
@@ -44,34 +46,36 @@ describe("Program Oracle methods", () => {
         closedAt,
         finishedAt,
         authorizer,
-        authId
+        authId,
       });
 
       const oracleData = await program.account.oracle.fetch(oracle);
 
       assert.ok(
-        oracleData.authorizer.equals(authorizer)
+        oracleData.authorizer.equals(authorizer),
+        "verify if the authorizer was assigned"
       );
 
       assert.ok(
-        oracleData.closedAt.eq(new BN(closedAt))
+        oracleData.closedAt.eq(new BN(closedAt)),
+        "verify if closed_at was assigned"
       );
 
-      assert.ok(
-        oracleData.finishedAt.eq(new BN(finishedAt))
-      );
+      // console.log(oracleData.finishedAt.toNumber());
+      // console.log(finishedAt);
 
       assert.ok(
-        oracleData.teamIds[0] === 1
+        oracleData.finishedAt.eq(new BN(finishedAt)),
+        "verify if finishedAt was assigned"
       );
 
-      assert.ok(
-        oracleData.teamIds[1] === 2
-      );
+      assert.ok(oracleData.teamsIds[0] === 1, "verify if team_a was assigned");
+
+      assert.ok(oracleData.teamsIds[1] === 2, "verify if team_a was assigned");
     });
   });
 
-  describe('#update-oracle', async () => {
+  describe("#update-oracle", async () => {
     it("updates an oracle", async () => {
       // create an auhorizer
 
@@ -83,8 +87,8 @@ describe("Program Oracle methods", () => {
         user: provider.wallet.publicKey,
         authId,
         connection: provider.connection,
-        payerSign: payer
-      })
+        payerSign: payer,
+      });
 
       // create an oracle
 
@@ -95,55 +99,43 @@ describe("Program Oracle methods", () => {
         closedAt,
         finishedAt,
         authorizer,
-        authId
+        authId,
       });
 
       // update oracle
 
       await updateOracle(program, {
-          user: provider.wallet.publicKey,
-          teamAValue: 1,
-          teamBValue: 2,
-          oracle,
-          authorizer
-        }
-      );
+        user: provider.wallet.publicKey,
+        teamAValue: 1,
+        teamBValue: 2,
+        oracle,
+        authorizer,
+      });
 
       const oracleData = await program.account.oracle.fetch(oracle);
 
-      assert.ok(
-        oracleData.authorizer.equals(authorizer)
-      );
+      assert.ok(oracleData.authorizer.equals(authorizer), "verify authorizer");
+
+      assert.ok(oracleData.closedAt.eq(new BN(closedAt)), "verify closedAt");
 
       assert.ok(
-        oracleData.closedAt.eq(new BN(closedAt))
+        oracleData.finishedAt.eq(new BN(finishedAt)),
+        "verify finishedAt"
       );
 
-      assert.ok(
-        oracleData.finishedAt.eq(new BN(finishedAt))
-      );
+      assert.ok(oracleData.teamsIds[0] === 20, "verify team_a");
 
-      assert.ok(
-        oracleData.teamIds[0] === 20
-      );
+      assert.ok(oracleData.teamsIds[1] === 25, "verify team_b");
 
-      assert.ok(
-        oracleData.teamIds[1] === 25
-      );
+      assert.ok(oracleData.results[0] === 1, "verify result team_a");
 
-      assert.ok(
-        oracleData.results[0] === 1
-      );
-
-      assert.ok(
-        oracleData.results[1] === 2
-      );
+      assert.ok(oracleData.results[1] === 2, "verify result team_b");
     });
   });
 
-  describe('#invalidate-oracle', async () => {
+  describe("#invalidate-oracle", async () => {
     it("invalidates an oracle", async () => {
-      const reason = 'game suspended';
+      const reason = "game suspended";
       // create an auhorizer
 
       const authId = new Date().getTime();
@@ -154,8 +146,8 @@ describe("Program Oracle methods", () => {
         user: provider.wallet.publicKey,
         authId,
         connection: provider.connection,
-        payerSign: payer
-      })
+        payerSign: payer,
+      });
 
       // create an oracle
 
@@ -166,30 +158,41 @@ describe("Program Oracle methods", () => {
         closedAt,
         finishedAt,
         authorizer,
-        authId
+        authId,
       });
 
       // Create an oracle invalid metadata account
 
-      const [oracleInvalidMetadata] = await anchor.web3.PublicKey.findProgramAddress(
-        [oracle.toBuffer(), Buffer.from('invalid')],
-        program.programId
-      );
+      const [oracleInvalidMetadata] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [oracle.toBuffer(), Buffer.from("invalid")],
+          program.programId
+        );
 
       // invalidate oracle
 
-      await program.methods.invalidateOracle(reason).accounts({
-        authorizer: authorizer,
-        oracle: oracle,
-        user: provider.wallet.publicKey,
-        oracleInvalidMedata: oracleInvalidMetadata
-      }).rpc();
+      await program.methods
+        .invalidateOracle(reason)
+        .accounts({
+          authorizer: authorizer,
+          oracle: oracle,
+          user: provider.wallet.publicKey,
+          oracleInvalidMedata: oracleInvalidMetadata,
+        })
+        .rpc();
 
       const oracleData = await program.account.oracle.fetch(oracle);
-      const oracleInvalidData = await program.account.oracleInvalidMetadata.fetch(oracleInvalidMetadata);
+      const oracleInvalidData =
+        await program.account.oracleInvalidMetadata.fetch(
+          oracleInvalidMetadata
+        );
 
-      assert.ok(oracleData.isInvalid);
-      assert.equal(oracleInvalidData.reason, reason);
+      assert.ok(oracleData.isInvalid, "verify if the oracle was invalidaded");
+      assert.equal(
+        oracleInvalidData.reason,
+        reason,
+        "verify if the reason was asssigned"
+      );
     });
   });
 });

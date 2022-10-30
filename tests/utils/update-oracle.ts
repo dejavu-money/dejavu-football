@@ -1,4 +1,4 @@
-import { DejavuFootball } from "../../target/types/dejavu_football";
+import { DejavuSolana } from "../../target/types/dejavu_solana";
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import { BN } from "bn.js";
@@ -16,11 +16,14 @@ interface Output {
 }
 
 export default async (
-  program: Program<DejavuFootball>,
+  program: Program<DejavuSolana>,
   input: Input
 ): Promise<Output> => {
   await program.methods
-    .updateOracle(input.teamAValue, input.teamBValue)
+    .updateOracle({
+      results: [input.teamAValue, input.teamBValue],
+      isFinished: true,
+    })
     .accounts({
       authorizer: input.authorizer,
       oracle: input.oracle,
