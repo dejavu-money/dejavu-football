@@ -18,6 +18,8 @@ pub fn create_oracle_handler(
     // set timestamp metadata
     ctx.accounts.oracle.finished_at = instruction.finished_at;
     ctx.accounts.oracle.closed_at = instruction.closed_at;
+    ctx.accounts.oracle.context = instruction.context;
+    ctx.accounts.oracle.context_id = instruction.context_id;
 
     Ok(())
 }

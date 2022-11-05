@@ -14,6 +14,7 @@ pub struct Oracle {
     pub is_finished: bool,  // 1
     pub is_invalid: bool,   // 1
     pub context: u8,        // 1
+    pub context_id: u64,    // 8
 }
 
 #[account]
@@ -27,7 +28,7 @@ pub struct CreateOracleAccounts<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 2 + 2 + 8 + 8 + 1 + 1 + 1,
+        space = 8 + 32 + 2 + 2 + 8 + 8 + 1 + 1 + 1 + 8,
         seeds = [
             authorizer.key().as_ref(),
             format!("{}", instruction.id).as_bytes().as_ref()

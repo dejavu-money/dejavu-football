@@ -19,8 +19,8 @@ declare_id!("GYVyvTHnPuFuSFC2gtM2q6veYq1UuSpamCe1PsD2fZ4L");
 
 #[program]
 pub mod dejavu_football {
-    use crate::rooms::instructions::CreateRoomInstruction;
     use super::*;
+    use crate::rooms::instructions::CreateRoomInstruction;
 
     /* Authorizer Instructions */
     pub fn create_authorizer(
@@ -54,12 +54,15 @@ pub mod dejavu_football {
     /* Room Instructions */
     pub fn create_room(
         ctx: Context<CreateRoomAccounts>,
-        instruction: CreateRoomInstruction
+        instruction: CreateRoomInstruction,
     ) -> Result<()> {
         create_room_handler(ctx, instruction)
     }
 
-    pub fn join_room(ctx: Context<JoinRoomAccounts>, player_bet: PlayerBetInstruction) -> Result<()> {
+    pub fn join_room(
+        ctx: Context<JoinRoomAccounts>,
+        player_bet: PlayerBetInstruction,
+    ) -> Result<()> {
         join_room_handler(ctx, player_bet)
     }
 

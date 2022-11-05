@@ -6,5 +6,5 @@ pub enum Errors {
     OracleInvalid,
     BetDuplicated,
     UnauthroizedWithdraw,
-    ValueOverFlowed
+    ValueOverFlowed,
 }

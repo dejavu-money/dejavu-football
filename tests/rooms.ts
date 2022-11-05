@@ -321,13 +321,13 @@ describe("dejavu-solana", () => {
       const authId = new Date().getTime();
       const roomId = new Date().getTime();
 
-      const playerInitBalance = 1000000 * 20 // 20$;
+      const playerInitBalance = 1000000 * 20; // 20$;
       // create token
       const token = await createToken({
         inputs: {
           connection: provider.connection,
           amount: playerInitBalance,
-          decimals: 6
+          decimals: 6,
         },
         accounts: {
           payerSign: payer,
@@ -336,13 +336,14 @@ describe("dejavu-solana", () => {
       });
 
       // create auth
-      const { authorizer, vaultAccount: authorizerVaultAccount } = await createAuthorizer(program, {
-        user: provider.wallet.publicKey,
-        authId,
-        connection: provider.connection,
-        payerSign: payer,
-        mint: token.accounts.mint,
-      });
+      const { authorizer, vaultAccount: authorizerVaultAccount } =
+        await createAuthorizer(program, {
+          user: provider.wallet.publicKey,
+          authId,
+          connection: provider.connection,
+          payerSign: payer,
+          mint: token.accounts.mint,
+        });
 
       // create oracle
       const closedAt = new Date().getTime();
@@ -431,7 +432,7 @@ describe("dejavu-solana", () => {
           players: roomPlayers,
           vaultAccount: vault,
           playerTokenAccount: playerMintTokenAccount,
-          authorizerVaultAccount: authorizerVaultAccount
+          authorizerVaultAccount: authorizerVaultAccount,
         })
         .rpc();
 
@@ -451,7 +452,7 @@ describe("dejavu-solana", () => {
 
       assert.equal(
         Number(playerMintAccountBalance.value.amount),
-        playerInitBalance - (roomInstruction.initAmount * 2 * 0.5) as number,
+        (playerInitBalance - roomInstruction.initAmount * 2 * 0.5) as number,
         "checks if player token account was increased"
       );
     });
@@ -473,13 +474,14 @@ describe("dejavu-solana", () => {
       });
 
       // create auth
-      const { authorizer, vaultAccount: authorizerVaultAccount } = await createAuthorizer(program, {
-        user: provider.wallet.publicKey,
-        authId,
-        connection: provider.connection,
-        payerSign: payer,
-        mint: token.accounts.mint,
-      });
+      const { authorizer, vaultAccount: authorizerVaultAccount } =
+        await createAuthorizer(program, {
+          user: provider.wallet.publicKey,
+          authId,
+          connection: provider.connection,
+          payerSign: payer,
+          mint: token.accounts.mint,
+        });
 
       // create oracle
       const closedAt = new Date().getTime();
@@ -569,7 +571,7 @@ describe("dejavu-solana", () => {
           players: roomPlayers,
           vaultAccount: vault,
           playerTokenAccount: playerMintTokenAccount,
-          authorizerVaultAccount: authorizerVaultAccount
+          authorizerVaultAccount: authorizerVaultAccount,
         })
         .rpc();
 

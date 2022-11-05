@@ -6,6 +6,8 @@ pub struct CreateOracleInstruction {
     pub teams_ids: [u8; 2],
     pub closed_at: i64,
     pub finished_at: i64,
+    pub context: u8,
+    pub context_id: u64,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]

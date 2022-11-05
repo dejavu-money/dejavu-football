@@ -66,17 +66,15 @@ export default async (
 
   // console.log(authorizer);
   await program.methods
-    .createRoom(
-      {
-        id: new BN(input.inputs.roomId),
-        playerBet: {
-          resultTeamA: input.inputs.teamAResult,
-          resultTeamB: input.inputs.teamBResult,
-          playerRoomIndex: input.inputs.playerKey,
-        },
-        initAmount: new BN(input.inputs.initAmount)
-      }
-    )
+    .createRoom({
+      id: new BN(input.inputs.roomId),
+      playerBet: {
+        resultTeamA: input.inputs.teamAResult,
+        resultTeamB: input.inputs.teamBResult,
+        playerRoomIndex: input.inputs.playerKey,
+      },
+      initAmount: new BN(input.inputs.initAmount),
+    })
     .accounts({
       vaultAccount: vault,
       mint: input.accounts.vaultMint,

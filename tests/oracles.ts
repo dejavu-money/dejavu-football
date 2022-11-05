@@ -42,6 +42,8 @@ describe("dejavu-solana", () => {
       const { oracle } = await createOracle(program, {
         teamAId: 1,
         teamBId: 2,
+        context: 1,
+        contextId: 666,
         user: provider.wallet.publicKey,
         closedAt,
         finishedAt,
@@ -61,17 +63,18 @@ describe("dejavu-solana", () => {
         "verify if closed_at was assigned"
       );
 
-      // console.log(oracleData.finishedAt.toNumber());
-      // console.log(finishedAt);
-
       assert.ok(
         oracleData.finishedAt.eq(new BN(finishedAt)),
         "verify if finishedAt was assigned"
       );
 
       assert.ok(oracleData.teamsIds[0] === 1, "verify if team_a was assigned");
-
       assert.ok(oracleData.teamsIds[1] === 2, "verify if team_a was assigned");
+      assert.ok(oracleData.context === 1, "verify if context was assigned");
+      assert.ok(
+        oracleData.contextId.eq(new BN(666)),
+        "verify if contextId was assigned"
+      );
     });
   });
 

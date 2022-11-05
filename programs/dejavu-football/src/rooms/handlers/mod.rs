@@ -1,4 +1,8 @@
-use super::{accounts::{CreateRoomAccounts, JoinRoomAccounts, WithdrawAccounts}, instructions::CreateRoomInstruction, instructions::PlayerBetInstruction};
+use super::{
+    accounts::{CreateRoomAccounts, JoinRoomAccounts, WithdrawAccounts},
+    instructions::CreateRoomInstruction,
+    instructions::PlayerBetInstruction,
+};
 use crate::shared::Errors;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Transfer};
@@ -6,7 +10,7 @@ const PLAYER_METADATA_VERSION: i16 = 0;
 
 pub fn create_room_handler(
     ctx: Context<CreateRoomAccounts>,
-    instruction: CreateRoomInstruction
+    instruction: CreateRoomInstruction,
 ) -> Result<()> {
     // validations
     ctx.accounts.oracle.validate()?;
@@ -18,9 +22,9 @@ pub fn create_room_handler(
     ctx.accounts.room.key = instruction.id;
 
     ctx.accounts.players.add_bet([
-        instruction.player_bet.result_team_a, 
+        instruction.player_bet.result_team_a,
         instruction.player_bet.result_team_b,
-        instruction.player_bet.player_room_index
+        instruction.player_bet.player_room_index,
     ])?;
     ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
     ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
@@ -42,7 +46,10 @@ pub fn create_room_handler(
     Ok(())
 }
 
-pub fn join_room_handler(ctx: Context<JoinRoomAccounts>, player_bet: PlayerBetInstruction) -> Result<()> {
+pub fn join_room_handler(
+    ctx: Context<JoinRoomAccounts>,
+    player_bet: PlayerBetInstruction,
+) -> Result<()> {
     // validations
     ctx.accounts.oracle.validate()?;
 
@@ -53,9 +60,9 @@ pub fn join_room_handler(ctx: Context<JoinRoomAccounts>, player_bet: PlayerBetIn
     ctx.accounts.player_metadata.key = player_bet.player_room_index;
     ctx.accounts.room.players_count += 1;
     ctx.accounts.players.add_bet([
-        player_bet.result_team_a, 
+        player_bet.result_team_a,
         player_bet.result_team_b,
-        player_bet.player_room_index
+        player_bet.player_room_index,
     ])?;
 
     // transfer
@@ -102,7 +109,8 @@ pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
                 return err!(Errors::UnauthroizedWithdraw);
             }
 
-            let total_deposited = ctx.accounts.room.init_amount * ctx.accounts.players.list.len() as u64;
+            let total_deposited =
+                ctx.accounts.room.init_amount * ctx.accounts.players.list.len() as u64;
             let fee = total_deposited
                 .checked_div(100)
                 .ok_or(Errors::ValueOverFlowed)?
@@ -144,11 +152,10 @@ pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
                     authority: ctx.accounts.room.to_account_info(),
                 };
 
-    
                 let room_seed = *ctx.bumps.get("room").unwrap();
                 let ctx_transfer =
                     CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
-    
+
                 token::transfer(
                     ctx_transfer.with_signer(&[&&[
                         &ctx.accounts.room.oracle.as_ref(),

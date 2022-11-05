@@ -9,11 +9,11 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 
 #[account]
 pub struct Room {
-    pub oracle: Pubkey,     // 32
-    pub key: i64,           // 8
-    pub is_finished: bool,  // 1
-    pub init_amount: u64,   // 8
-    pub players_count: u8,  // 1
+    pub oracle: Pubkey,    // 32
+    pub key: i64,          // 8
+    pub is_finished: bool, // 1
+    pub init_amount: u64,  // 8
+    pub players_count: u8, // 1
 }
 
 #[account]

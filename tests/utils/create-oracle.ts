@@ -11,6 +11,8 @@ interface Input {
   teamBId: number;
   closedAt: number;
   finishedAt: number;
+  context?: number;
+  contextId?: number;
 }
 
 interface Output {
@@ -32,6 +34,8 @@ export default async (
       teamsIds: [input.teamAId, input.teamBId],
       closedAt: new BN(input.closedAt),
       finishedAt: new BN(input.finishedAt),
+      contextId: new BN(input.contextId || 0),
+      context: input.context || 0,
     })
     .accounts({
       authorizer: input.authorizer,

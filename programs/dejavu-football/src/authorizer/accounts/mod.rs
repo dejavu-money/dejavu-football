@@ -9,7 +9,7 @@ use anchor_spl::token::TokenAccount;
 pub struct AuthorizerAccount {
     pub authority: Pubkey, // 32
     pub mint: Pubkey,      // 32
-    pub fee: u64           // 8
+    pub fee: u64,          // 8
 }
 
 #[derive(Accounts)]
