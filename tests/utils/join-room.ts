@@ -1,6 +1,8 @@
-import { DejavuFootball } from "../../target/types/dejavu_football";
+import { DejavuSolana } from "../../target/types/dejavu_solana";
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
+import { Program } from "@project-serum/anchor";
+
 // import { BN } from "bn.js";
 
 interface Input {
@@ -8,8 +10,9 @@ interface Input {
     teamAResult: number;
     teamBResult: number;
     playerKey: number;
-  },
+  };
   accounts: {
+    authorizer: PublicKey;
     user: PublicKey;
     room: PublicKey;
     roomPlayers: PublicKey;
@@ -17,44 +20,49 @@ interface Input {
     oracle: PublicKey;
     playerMintTokenAccount: PublicKey;
     vaultAccount: PublicKey;
-  }
+  };
 }
 
 interface Output {
   accounts: {
     joinPlayerMetadata: PublicKey;
-  }
+  };
 }
 
 export default async (
-  program: Program<DejavuFootball>,
+  program: Program<DejavuSolana>,
   input: Input
 ): Promise<Output> => {
+  const [joinPlayerMetadata] = await anchor.web3.PublicKey.findProgramAddress(
+    [
+      input.accounts.room.toBuffer(),
+      Buffer.from(`player-${input.inputs.playerKey}`),
+    ],
+    program.programId
+  );
 
-  const [joinPlayerMetadata] =
-        await anchor.web3.PublicKey.findProgramAddress(
-          [input.accounts.room.toBuffer(), Buffer.from(`player-${input.inputs.playerKey}`)],
-          program.programId
-        );
-
-      await program.methods
-        .joinRoom([input.inputs.teamAResult, input.inputs.teamBResult, input.inputs.playerKey])
-        .accounts({
-          mint: input.accounts.vaultMint,
-          room: input.accounts.room,
-          oracle: input.accounts.oracle,
-          vaultAccount: input.accounts.vaultAccount,
-          playerMetadata: joinPlayerMetadata,
-          players: input.accounts.roomPlayers,
-          playerTokenAccount: input.accounts.playerMintTokenAccount,
-          user: input.accounts.user,
-        })
-        .rpc();
-
+  await program.methods
+    .joinRoom({
+      resultTeamA: input.inputs.teamAResult,
+      resultTeamB: input.inputs.teamBResult,
+      playerRoomIndex: input.inputs.playerKey,
+    })
+    .accounts({
+      authorizer: input.accounts.authorizer,
+      mint: input.accounts.vaultMint,
+      room: input.accounts.room,
+      oracle: input.accounts.oracle,
+      vaultAccount: input.accounts.vaultAccount,
+      playerMetadata: joinPlayerMetadata,
+      players: input.accounts.roomPlayers,
+      playerTokenAccount: input.accounts.playerMintTokenAccount,
+      user: input.accounts.user,
+    })
+    .rpc();
 
   return {
     accounts: {
-      joinPlayerMetadata
-    }
-  }
+      joinPlayerMetadata,
+    },
+  };
 };
