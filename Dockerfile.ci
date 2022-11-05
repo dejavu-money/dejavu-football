@@ -2,3 +2,5 @@ FROM dejavumoney/anchor-ci:0.25
 
 COPY . ./app
 WORKDIR /app
+
+RUN solana-install update
