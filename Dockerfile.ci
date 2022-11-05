@@ -3,4 +3,5 @@ FROM dejavumoney/anchor-ci:0.25
 COPY . ./app
 WORKDIR /app
 
-RUN solana-install update
+RUN sh -c "$(curl -sSfL https://release.solana.com/v1.14.7/install)"
+
