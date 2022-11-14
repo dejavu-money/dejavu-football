@@ -1,4 +1,4 @@
-import { DejavuSolana } from "../../target/types/dejavu_solana";
+import { DejavuFootball } from "../../target/types/dejavu_football";
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
@@ -30,7 +30,7 @@ interface Output {
 }
 
 export default async (
-  program: Program<DejavuSolana>,
+  program: Program<DejavuFootball>,
   input: Input
 ): Promise<Output> => {
   const [joinPlayerMetadata] = await anchor.web3.PublicKey.findProgramAddress(

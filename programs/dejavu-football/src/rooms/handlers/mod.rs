@@ -29,7 +29,7 @@ pub fn create_room_handler(
     ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
     ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
     ctx.accounts.player_metadata.key = instruction.player_bet.player_room_index;
-    ctx.accounts.player_metadata.room_key = instruction.id;
+    ctx.accounts.player_metadata.room = ctx.accounts.room.key();
     ctx.accounts.player_metadata.version = PLAYER_METADATA_VERSION;
 
     // transfer
@@ -55,7 +55,7 @@ pub fn join_room_handler(
 
     ctx.accounts.player_metadata.version = PLAYER_METADATA_VERSION;
     ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
-    ctx.accounts.player_metadata.room_key = ctx.accounts.room.key;
+    ctx.accounts.player_metadata.room = ctx.accounts.room.key();
     ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
     ctx.accounts.player_metadata.key = player_bet.player_room_index;
     ctx.accounts.room.players_count += 1;
