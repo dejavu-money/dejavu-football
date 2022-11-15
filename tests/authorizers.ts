@@ -4,6 +4,7 @@ import { DejavuFootball } from "../target/types/dejavu_football";
 import createAuthorizer from "./utils/create-authorizer";
 import createToken from "./utils/create-token";
 import { assert } from "chai";
+import { BN } from "bn.js";
 
 describe("dejavu-solana", () => {
   const provider = anchor.AnchorProvider.env();
@@ -40,6 +41,7 @@ describe("dejavu-solana", () => {
         payerSign: payer,
         user: provider.wallet.publicKey,
         authId,
+        fee: 10,
         mint: token.accounts.mint,
       });
 
@@ -53,8 +55,64 @@ describe("dejavu-solana", () => {
       );
 
       assert.ok(
+        authorizerData.fee.toNumber() === 10,
+        "verify if the fee was assigned"
+      );
+
+      assert.ok(
         authorizerData.mint.equals(token.accounts.mint),
         "verify if the mint was assigned"
+      );
+    });
+  });
+
+  describe("#update-authorizer", async () => {
+    it("updates an authorizer", async () => {
+      const token = await createToken({
+        inputs: {
+          connection: provider.connection,
+          amount: 1,
+        },
+        accounts: {
+          payer: provider.wallet.publicKey,
+          payerSign: payer,
+        },
+      });
+
+      const authId = new Date().getTime();
+      const { authorizer } = await createAuthorizer(program, {
+        connection: provider.connection,
+        payerSign: payer,
+        user: provider.wallet.publicKey,
+        authId,
+        fee: 10,
+        mint: token.accounts.mint,
+      });
+
+      let authorizerData = await program.account.authorizerAccount.fetch(
+        authorizer
+      );
+
+      assert.ok(
+        authorizerData.fee.toNumber() === 10,
+        "verify if the fee was assigned"
+      );
+
+      await program.methods
+        .updateAuthorizer({ fee: new BN(20) })
+        .accounts({
+          authorizer: authorizer,
+          user: provider.wallet.publicKey
+        })
+        .rpc();
+
+      authorizerData = await program.account.authorizerAccount.fetch(
+        authorizer
+      );
+
+      assert.ok(
+        authorizerData.fee.toNumber() === 20,
+        "verify if the fee was updated"
       );
     });
   });

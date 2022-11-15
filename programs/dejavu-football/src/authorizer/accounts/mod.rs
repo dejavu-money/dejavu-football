@@ -1,4 +1,4 @@
-use crate::CreateAuthorizerInstruction;
+use crate::{CreateAuthorizerInstruction, UpdateAuthorizerInstruction};
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 use anchor_spl::token::Token;
@@ -51,3 +51,19 @@ pub struct CreateAuthorizerAccounts<'info> {
     pub rent: Sysvar<'info, Rent>,
     pub mint: Account<'info, Mint>,
 }
+
+#[derive(Accounts)]
+#[instruction(instruction: UpdateAuthorizerInstruction)]
+pub struct UpdateAuthorizerAccounts<'info> {
+    #[account(
+        mut, 
+        constraint = authorizer.authority == *user.to_account_info().key
+    )]
+    pub authorizer: Account<'info, AuthorizerAccount>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>
+}
+

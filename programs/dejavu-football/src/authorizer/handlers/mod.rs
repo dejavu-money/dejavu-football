@@ -11,3 +11,11 @@ pub fn create_authorizer_handler(
     ctx.accounts.authorizer.fee = instruction.fee;
     Ok(())
 }
+
+pub fn update_authorizer_handler(
+    ctx: Context<UpdateAuthorizerAccounts>,
+    instruction: UpdateAuthorizerInstruction,
+) -> Result<()> {
+    ctx.accounts.authorizer.fee = instruction.fee;
+    Ok(())
+}

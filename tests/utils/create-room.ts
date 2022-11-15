@@ -80,6 +80,7 @@ export default async (
       mint: input.accounts.vaultMint,
       authorizer: input.accounts.authorizer,
       room: room,
+      payer: input.accounts.user,
       user: input.accounts.user,
       oracle: input.accounts.oracle,
       players: roomPlayers,

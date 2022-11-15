@@ -10,6 +10,7 @@ interface Input {
   payerSign: Signer;
   user: PublicKey;
   mint?: PublicKey;
+  fee?: number;
   authId: number;
 }
 
@@ -58,7 +59,7 @@ export default async (
   await program.methods
     .createAuthorizer({
       id: new BN(input.authId),
-      fee: new BN(50),
+      fee: new BN(input.fee || 0),
     })
     .accounts({
       authorizer: authorizer,

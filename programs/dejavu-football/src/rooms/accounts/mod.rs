@@ -39,7 +39,7 @@ pub struct CreateRoomAccounts<'info> {
     pub mint: Account<'info, Mint>,
     #[account(
         init,
-        payer = user,
+        payer = payer,
         space = 8 + 32 + 8 + 1 + 8 + 1,
         seeds = [oracle.key().as_ref(), format!("room-{}", instruction.id).as_bytes().as_ref()], 
         bump,
@@ -49,7 +49,7 @@ pub struct CreateRoomAccounts<'info> {
     pub room: Account<'info, Room>,
     #[account(
         init,
-        payer = user,
+        payer = payer,
         space = 8 + 32+ 32 + 32 + 1 + 1 + 2 + 8,
         seeds = [room.key().as_ref(), format!("player-{}", instruction.player_bet.player_room_index).as_bytes().as_ref()], 
         bump
@@ -57,7 +57,7 @@ pub struct CreateRoomAccounts<'info> {
     pub room_history: Account<'info, RoomsHistory>,
     #[account(
         init,
-        payer = user,
+        payer = payer,
         space = 8 + 8,
         seeds = [room.key().as_ref(), b"players"], 
         bump
@@ -65,15 +65,17 @@ pub struct CreateRoomAccounts<'info> {
     pub players: Account<'info, RoomPlayers>,
     #[account(
         init,
-        payer = user,
+        payer = payer,
         token::mint = mint,
         token::authority = room,
         seeds = [room.key().as_ref(), b"vault".as_ref()],
         bump
     )]
     pub vault_account: Account<'info, TokenAccount>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub user: UncheckedAccount<'info>,
     #[account(mut)]
-    pub user: Signer<'info>,
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
@@ -92,7 +94,7 @@ pub struct JoinRoomAccounts<'info> {
     pub room: Account<'info, Room>,
     #[account(
         init,
-        payer = user,
+        payer = payer,
         space = 8 + 32 + 32 + 32 + 1 + 1 + 2 + 8,
         seeds = [room.key().as_ref(), format!("player-{}", instruction.player_room_index).as_bytes().as_ref()], 
         bump,
@@ -105,14 +107,16 @@ pub struct JoinRoomAccounts<'info> {
         seeds = [room.key().as_ref(), b"players"], 
         bump,
         realloc = players.calculate_new_space(),
-        realloc::payer = user,
+        realloc::payer = payer,
         realloc::zero = false,
     )]
     pub players: Account<'info, RoomPlayers>,
     #[account(mut)]
     pub vault_account: Account<'info, TokenAccount>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub user: UncheckedAccount<'info>,
     #[account(mut)]
-    pub user: Signer<'info>,
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,

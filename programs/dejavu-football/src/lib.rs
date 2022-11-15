@@ -29,6 +29,13 @@ pub mod dejavu_football {
     ) -> Result<()> {
         create_authorizer_handler(ctx, instruction)
     }
+
+    pub fn update_authorizer(
+        ctx: Context<UpdateAuthorizerAccounts>,
+        instruction: UpdateAuthorizerInstruction,
+    ) -> Result<()> {
+        update_authorizer_handler(ctx, instruction)
+    }
     /* Authorizer Instructions */
 
     /* Oracle Instructions */
