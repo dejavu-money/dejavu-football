@@ -10,7 +10,7 @@ pub struct AuthorizerAccount {
     pub authority: Pubkey, // 32
     pub mint: Pubkey,      // 32
     pub fee: u64,          // 8
-    pub id: i64            // 8
+    pub id: i64,           // 8
 }
 
 #[derive(Accounts)]

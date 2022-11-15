@@ -112,11 +112,15 @@ pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
 
             let total_deposited =
                 ctx.accounts.room.init_amount * ctx.accounts.players.list.len() as u64;
-            let fee = total_deposited
-                .checked_div(100)
-                .ok_or(Errors::ValueOverFlowed)?
-                .checked_mul(ctx.accounts.authorizer.fee)
-                .ok_or(Errors::ValueOverFlowed)?;
+            let fee = if ctx.accounts.players.list.len() > 1 {
+                total_deposited
+                    .checked_div(100)
+                    .ok_or(Errors::ValueOverFlowed)?
+                    .checked_mul(ctx.accounts.authorizer.fee)
+                    .ok_or(Errors::ValueOverFlowed)?
+            } else {
+                0
+            };
 
             let total_award = total_deposited - fee;
 
