@@ -46,7 +46,7 @@ export default async (
       await createToken({
         inputs: {
           connection: input.connection,
-          amount: 2,
+          amount: 1000,
         },
 
         accounts: {

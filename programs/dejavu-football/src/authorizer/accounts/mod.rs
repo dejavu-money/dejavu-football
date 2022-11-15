@@ -1,4 +1,4 @@
-use crate::{CreateAuthorizerInstruction, UpdateAuthorizerInstruction};
+use crate::CreateAuthorizerInstruction;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 use anchor_spl::token::Token;
@@ -10,6 +10,7 @@ pub struct AuthorizerAccount {
     pub authority: Pubkey, // 32
     pub mint: Pubkey,      // 32
     pub fee: u64,          // 8
+    pub id: i64            // 8
 }
 
 #[derive(Accounts)]
@@ -18,7 +19,7 @@ pub struct CreateAuthorizerAccounts<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32 + 8,
+        space = 8 + 32 + 32 + 8 + 8,
         seeds = [
             "authorizer".as_bytes().as_ref(), 
             format!("{}", instruction.id).as_bytes().as_ref()
@@ -53,10 +54,9 @@ pub struct CreateAuthorizerAccounts<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(instruction: UpdateAuthorizerInstruction)]
 pub struct UpdateAuthorizerAccounts<'info> {
     #[account(
-        mut, 
+        mut,
         constraint = authorizer.authority == *user.to_account_info().key
     )]
     pub authorizer: Account<'info, AuthorizerAccount>,
@@ -64,6 +64,28 @@ pub struct UpdateAuthorizerAccounts<'info> {
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>
+    pub rent: Sysvar<'info, Rent>,
 }
 
+#[derive(Accounts)]
+pub struct WithdrawFromAuthorizerAccounts<'info> {
+    #[account(
+        mut,
+        seeds = [
+            "authorizer".as_bytes().as_ref(), 
+            format!("{}", authorizer.id).as_bytes().as_ref()
+        ],
+        bump,
+        constraint = authorizer.authority == *user.to_account_info().key
+    )]
+    pub authorizer: Account<'info, AuthorizerAccount>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    #[account(mut)]
+    pub authorizer_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>,
+    pub rent: Sysvar<'info, Rent>,
+}

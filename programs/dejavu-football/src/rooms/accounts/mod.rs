@@ -23,8 +23,8 @@ pub struct RoomsHistory {
     pub token_account: Pubkey, // 32
     pub key: u8,               // 1
     pub withdrew: bool,        // 1
-    pub version: i16,        // 2
-    pub created_at: i64 // 8
+    pub version: i16,          // 2
+    pub created_at: i64,       // 8
 }
 
 #[account]

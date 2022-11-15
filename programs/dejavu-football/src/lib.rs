@@ -36,6 +36,13 @@ pub mod dejavu_football {
     ) -> Result<()> {
         update_authorizer_handler(ctx, instruction)
     }
+
+    pub fn withdraw_from_authorizer(
+        ctx: Context<WithdrawFromAuthorizerAccounts>,
+        instruction: WithdrawFromAuthorizerInstruction,
+    ) -> Result<()> {
+        withdraw_from_authorizer_handler(ctx, instruction)
+    }
     /* Authorizer Instructions */
 
     /* Oracle Instructions */

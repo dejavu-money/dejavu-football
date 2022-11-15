@@ -14,7 +14,7 @@ pub fn create_room_handler(
 ) -> Result<()> {
     // validations
     ctx.accounts.oracle.validate()?;
-    ctx.accounts.room_history.created_at  = Clock::get()?.unix_timestamp;
+    ctx.accounts.room_history.created_at = Clock::get()?.unix_timestamp;
     ctx.accounts.room.oracle = ctx.accounts.oracle.key();
     ctx.accounts.room.is_finished = false;
     ctx.accounts.room.init_amount = instruction.init_amount;
@@ -53,7 +53,7 @@ pub fn join_room_handler(
     // validations
     ctx.accounts.oracle.validate()?;
 
-    ctx.accounts.room_history.created_at  = Clock::get()?.unix_timestamp;
+    ctx.accounts.room_history.created_at = Clock::get()?.unix_timestamp;
     ctx.accounts.room_history.version = ROOM_HISTORY_VERSION;
     ctx.accounts.room_history.created_by = ctx.accounts.user.key();
     ctx.accounts.room_history.room = ctx.accounts.room.key();

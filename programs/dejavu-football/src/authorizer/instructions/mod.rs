@@ -8,5 +8,10 @@ pub struct CreateAuthorizerInstruction {
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct UpdateAuthorizerInstruction {
-    pub fee: u64
+    pub fee: u64,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct WithdrawFromAuthorizerInstruction {
+    pub amount: u64,
 }
