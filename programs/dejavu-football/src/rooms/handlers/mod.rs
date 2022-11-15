@@ -6,7 +6,7 @@ use super::{
 use crate::shared::Errors;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Transfer};
-const PLAYER_METADATA_VERSION: i16 = 0;
+const ROOM_HISTORY_VERSION: i16 = 0;
 
 pub fn create_room_handler(
     ctx: Context<CreateRoomAccounts>,
@@ -14,7 +14,7 @@ pub fn create_room_handler(
 ) -> Result<()> {
     // validations
     ctx.accounts.oracle.validate()?;
-
+    ctx.accounts.room_history.created_at  = Clock::get()?.unix_timestamp;
     ctx.accounts.room.oracle = ctx.accounts.oracle.key();
     ctx.accounts.room.is_finished = false;
     ctx.accounts.room.init_amount = instruction.init_amount;
@@ -26,11 +26,11 @@ pub fn create_room_handler(
         instruction.player_bet.result_team_b,
         instruction.player_bet.player_room_index,
     ])?;
-    ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
-    ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
-    ctx.accounts.player_metadata.key = instruction.player_bet.player_room_index;
-    ctx.accounts.player_metadata.room = ctx.accounts.room.key();
-    ctx.accounts.player_metadata.version = PLAYER_METADATA_VERSION;
+    ctx.accounts.room_history.created_by = ctx.accounts.user.key();
+    ctx.accounts.room_history.token_account = ctx.accounts.player_token_account.key();
+    ctx.accounts.room_history.key = instruction.player_bet.player_room_index;
+    ctx.accounts.room_history.room = ctx.accounts.room.key();
+    ctx.accounts.room_history.version = ROOM_HISTORY_VERSION;
 
     // transfer
     let cpi_accounts = Transfer {
@@ -53,11 +53,12 @@ pub fn join_room_handler(
     // validations
     ctx.accounts.oracle.validate()?;
 
-    ctx.accounts.player_metadata.version = PLAYER_METADATA_VERSION;
-    ctx.accounts.player_metadata.created_by = ctx.accounts.user.key();
-    ctx.accounts.player_metadata.room = ctx.accounts.room.key();
-    ctx.accounts.player_metadata.token_account = ctx.accounts.player_token_account.key();
-    ctx.accounts.player_metadata.key = player_bet.player_room_index;
+    ctx.accounts.room_history.created_at  = Clock::get()?.unix_timestamp;
+    ctx.accounts.room_history.version = ROOM_HISTORY_VERSION;
+    ctx.accounts.room_history.created_by = ctx.accounts.user.key();
+    ctx.accounts.room_history.room = ctx.accounts.room.key();
+    ctx.accounts.room_history.token_account = ctx.accounts.player_token_account.key();
+    ctx.accounts.room_history.key = player_bet.player_room_index;
     ctx.accounts.room.players_count += 1;
     ctx.accounts.players.add_bet([
         player_bet.result_team_a,
@@ -98,11 +99,11 @@ pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
                 ctx.program_id,
             );
 
-            if ctx.accounts.player_metadata.key() != player_meta_pda
-                || ctx.accounts.player_metadata.created_by != ctx.accounts.user.key()
-                || ctx.accounts.player_metadata.token_account
+            if ctx.accounts.room_history.key() != player_meta_pda
+                || ctx.accounts.room_history.created_by != ctx.accounts.user.key()
+                || ctx.accounts.room_history.token_account
                     != ctx.accounts.player_token_account.key()
-                || ctx.accounts.player_metadata.withdrew
+                || ctx.accounts.room_history.withdrew
                 || !ctx.accounts.oracle.is_finished
                 || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
             {
@@ -126,7 +127,7 @@ pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
                 authority: ctx.accounts.room.to_account_info(),
             };
 
-            ctx.accounts.player_metadata.withdrew = true;
+            ctx.accounts.room_history.withdrew = true;
             ctx.accounts.room.is_finished = true;
 
             let room_seed = *ctx.bumps.get("room").unwrap();
@@ -174,25 +175,25 @@ pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
             let (player_meta_pda, _) = Pubkey::find_program_address(
                 &[
                     &ctx.accounts.room.key().as_ref(),
-                    format!("player-{}", ctx.accounts.player_metadata.key)
+                    format!("player-{}", ctx.accounts.room_history.key)
                         .as_bytes()
                         .as_ref(),
                 ],
                 ctx.program_id,
             );
 
-            if ctx.accounts.player_metadata.key() != player_meta_pda
-                || ctx.accounts.player_metadata.created_by != ctx.accounts.user.key()
-                || ctx.accounts.player_metadata.token_account
+            if ctx.accounts.room_history.key() != player_meta_pda
+                || ctx.accounts.room_history.created_by != ctx.accounts.user.key()
+                || ctx.accounts.room_history.token_account
                     != ctx.accounts.player_token_account.key()
-                || ctx.accounts.player_metadata.withdrew
+                || ctx.accounts.room_history.withdrew
                 || !ctx.accounts.oracle.is_finished
                 || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
             {
                 return err!(Errors::UnauthroizedWithdraw);
             }
 
-            ctx.accounts.player_metadata.withdrew = true;
+            ctx.accounts.room_history.withdrew = true;
             ctx.accounts.room.is_finished = true;
 
             let cpi_accounts = Transfer {

@@ -17,13 +17,14 @@ pub struct Room {
 }
 
 #[account]
-pub struct RoomPlayerMetadata {
+pub struct RoomsHistory {
     pub room: Pubkey,          // 32
     pub created_by: Pubkey,    // 32
     pub token_account: Pubkey, // 32
     pub key: u8,               // 1
     pub withdrew: bool,        // 1
-    pub version: i16          // 2
+    pub version: i16,        // 2
+    pub created_at: i64 // 8
 }
 
 #[account]
@@ -49,11 +50,11 @@ pub struct CreateRoomAccounts<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32+ 32 + 32 + 1 + 1 + 2,
+        space = 8 + 32+ 32 + 32 + 1 + 1 + 2 + 8,
         seeds = [room.key().as_ref(), format!("player-{}", instruction.player_bet.player_room_index).as_bytes().as_ref()], 
         bump
     )]
-    pub player_metadata: Account<'info, RoomPlayerMetadata>,
+    pub room_history: Account<'info, RoomsHistory>,
     #[account(
         init,
         payer = user,
@@ -92,13 +93,13 @@ pub struct JoinRoomAccounts<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 32 + 32 + 1 + 1 + 2,
+        space = 8 + 32 + 32 + 32 + 1 + 1 + 2 + 8,
         seeds = [room.key().as_ref(), format!("player-{}", instruction.player_room_index).as_bytes().as_ref()], 
         bump,
         constraint = mint.key() == authorizer.mint,
         constraint = oracle.authorizer.key() == authorizer.key()
     )]
-    pub player_metadata: Account<'info, RoomPlayerMetadata>,
+    pub room_history: Account<'info, RoomsHistory>,
     #[account(
         mut,
         seeds = [room.key().as_ref(), b"players"], 
@@ -126,7 +127,7 @@ pub struct WithdrawAccounts<'info> {
     #[account(mut, seeds = [room.oracle.as_ref(), format!("room-{}", room.key).as_bytes().as_ref()], bump)]
     pub room: Account<'info, Room>,
     #[account(mut)]
-    pub player_metadata: Account<'info, RoomPlayerMetadata>,
+    pub room_history: Account<'info, RoomsHistory>,
     pub players: Account<'info, RoomPlayers>,
     #[account(mut, seeds = [room.key().as_ref(), b"vault".as_ref()], bump)]
     pub vault_account: Account<'info, TokenAccount>,

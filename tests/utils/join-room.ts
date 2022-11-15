@@ -53,7 +53,7 @@ export default async (
       room: input.accounts.room,
       oracle: input.accounts.oracle,
       vaultAccount: input.accounts.vaultAccount,
-      playerMetadata: joinPlayerMetadata,
+      roomHistory: joinPlayerMetadata,
       players: input.accounts.roomPlayers,
       playerTokenAccount: input.accounts.playerMintTokenAccount,
       user: input.accounts.user,

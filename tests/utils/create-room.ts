@@ -83,7 +83,7 @@ export default async (
       user: input.accounts.user,
       oracle: input.accounts.oracle,
       players: roomPlayers,
-      playerMetadata: roomPlayerMetadata,
+      roomHistory: roomPlayerMetadata,
       playerTokenAccount: input.accounts.playerMintTokenAccount,
     })
     .rpc();

@@ -102,7 +102,7 @@ describe("dejavu-solana", () => {
       const roomPlayerData = await program.account.roomPlayers.fetch(
         roomPlayers
       );
-      const roomPlayerMetaData = await program.account.roomPlayerMetadata.fetch(
+      const roomPlayerMetaData = await program.account.roomsHistory.fetch(
         roomPlayerMetadata
       );
 
@@ -264,7 +264,7 @@ describe("dejavu-solana", () => {
 
       let roomPlayerData = await program.account.roomPlayers.fetch(roomPlayers);
 
-      let joinPlayerMetaData = await program.account.roomPlayerMetadata.fetch(
+      let joinPlayerMetaData = await program.account.roomsHistory.fetch(
         joinPlayerMetadata
       );
 
@@ -428,7 +428,7 @@ describe("dejavu-solana", () => {
           oracle: oracle,
           mint: vaultMint,
           room: room,
-          playerMetadata: joinPlayerMetadata,
+          roomHistory: joinPlayerMetadata,
           players: roomPlayers,
           vaultAccount: vault,
           playerTokenAccount: playerMintTokenAccount,
@@ -567,7 +567,7 @@ describe("dejavu-solana", () => {
           oracle: oracle,
           mint: vaultMint,
           room: room,
-          playerMetadata: joinPlayerMetadata,
+          roomHistory: joinPlayerMetadata,
           players: roomPlayers,
           vaultAccount: vault,
           playerTokenAccount: playerMintTokenAccount,
@@ -576,7 +576,7 @@ describe("dejavu-solana", () => {
         .rpc();
 
       const joinPlayerMetadataData =
-        await program.account.roomPlayerMetadata.fetch(joinPlayerMetadata);
+        await program.account.roomsHistory.fetch(joinPlayerMetadata);
 
       const vaultMintAccountBalance =
         await provider.connection.getTokenAccountBalance(vault);
