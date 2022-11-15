@@ -130,8 +130,15 @@ pub struct WithdrawAccounts<'info> {
     pub mint: Account<'info, Mint>,
     #[account(mut, seeds = [room.oracle.as_ref(), format!("room-{}", room.key).as_bytes().as_ref()], bump)]
     pub room: Account<'info, Room>,
-    #[account(mut)]
+    #[account(mut,
+        seeds = [
+            room.key().as_ref(),
+            format!("player-{}", room_history.key).as_bytes().as_ref()
+        ],
+        bump
+    )]
     pub room_history: Account<'info, RoomsHistory>,
+    #[account(seeds = [room.key().as_ref(), b"players"], bump)]
     pub players: Account<'info, RoomPlayers>,
     #[account(mut, seeds = [room.key().as_ref(), b"vault".as_ref()], bump)]
     pub vault_account: Account<'info, TokenAccount>,
@@ -140,7 +147,13 @@ pub struct WithdrawAccounts<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = room_history.room.key() == room.key() && room_history.created_by == user.key(),
+        constraint = oracle.is_finished == true && room_history.withdrew == false,
+        constraint = room_history.created_by == user.key() && room_history.token_account == player_token_account.key(),
+        constraint = room.oracle == oracle.key()
+    )]
     pub player_token_account: Account<'info, TokenAccount>,
     pub authorizer: Box<Account<'info, AuthorizerAccount>>,
     #[account(mut, seeds = [authorizer.key().as_ref(), b"vault".as_ref()], bump)]

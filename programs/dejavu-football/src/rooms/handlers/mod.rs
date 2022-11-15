@@ -81,16 +81,12 @@ pub fn join_room_handler(
 }
 
 pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
-    // TODO: validate that the oracle is finished
-    // TODO: validate that playerKey belongs to this room
-
     match ctx
         .accounts
         .players
         .get_winner_player_key(&ctx.accounts.oracle)
     {
         Some(player_key) => {
-            // validate pda
             let (player_meta_pda, _) = Pubkey::find_program_address(
                 &[
                     &ctx.accounts.room.key().as_ref(),
@@ -100,12 +96,6 @@ pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
             );
 
             if ctx.accounts.room_history.key() != player_meta_pda
-                || ctx.accounts.room_history.created_by != ctx.accounts.user.key()
-                || ctx.accounts.room_history.token_account
-                    != ctx.accounts.player_token_account.key()
-                || ctx.accounts.room_history.withdrew
-                || !ctx.accounts.oracle.is_finished
-                || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
             {
                 return err!(Errors::UnauthroizedWithdraw);
             }
@@ -175,28 +165,6 @@ pub fn withdraw_handler(ctx: Context<WithdrawAccounts>) -> Result<()> {
         }
 
         None => {
-            // validate pda
-            let (player_meta_pda, _) = Pubkey::find_program_address(
-                &[
-                    &ctx.accounts.room.key().as_ref(),
-                    format!("player-{}", ctx.accounts.room_history.key)
-                        .as_bytes()
-                        .as_ref(),
-                ],
-                ctx.program_id,
-            );
-
-            if ctx.accounts.room_history.key() != player_meta_pda
-                || ctx.accounts.room_history.created_by != ctx.accounts.user.key()
-                || ctx.accounts.room_history.token_account
-                    != ctx.accounts.player_token_account.key()
-                || ctx.accounts.room_history.withdrew
-                || !ctx.accounts.oracle.is_finished
-                || ctx.accounts.oracle.key() != ctx.accounts.room.oracle
-            {
-                return err!(Errors::UnauthroizedWithdraw);
-            }
-
             ctx.accounts.room_history.withdrew = true;
             ctx.accounts.room.is_finished = true;
 
