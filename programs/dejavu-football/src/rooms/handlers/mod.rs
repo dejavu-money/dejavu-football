@@ -34,7 +34,7 @@ pub fn create_room_handler(
 
     // transfer
     let cpi_accounts = Transfer {
-        from: ctx.accounts.player_token_account.to_account_info(),
+        from: ctx.accounts.payer_token_account.to_account_info(),
         to: ctx.accounts.vault_account.to_account_info(),
         authority: ctx.accounts.payer.to_account_info(),
     };
@@ -68,7 +68,7 @@ pub fn join_room_handler(
 
     // transfer
     let cpi_accounts = Transfer {
-        from: ctx.accounts.player_token_account.to_account_info(),
+        from: ctx.accounts.payer_token_account.to_account_info(),
         to: ctx.accounts.vault_account.to_account_info(),
         authority: ctx.accounts.payer.to_account_info(),
     };

@@ -56,6 +56,7 @@ export default async (
       roomHistory: joinPlayerMetadata,
       players: input.accounts.roomPlayers,
       playerTokenAccount: input.accounts.playerMintTokenAccount,
+      payerTokenAccount: input.accounts.playerMintTokenAccount,
       user: input.accounts.user,
     })
     .rpc();

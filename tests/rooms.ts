@@ -458,151 +458,151 @@ describe("dejavu-solana", () => {
       );
     });
 
-    // it("withdraws the player bet because anyone won the bet", async () => {
-    //   const authId = new Date().getTime();
-    //   const roomId = new Date().getTime();
+    it("withdraws the player bet because anyone won the bet", async () => {
+      const authId = new Date().getTime();
+      const roomId = new Date().getTime();
 
-    //   // create token
-    //   const token = await createToken({
-    //     inputs: {
-    //       connection: provider.connection,
-    //       amount: 5,
-    //     },
-    //     accounts: {
-    //       payerSign: payer,
-    //       payer: payer.publicKey,
-    //     },
-    //   });
+      // create token
+      const token = await createToken({
+        inputs: {
+          connection: provider.connection,
+          amount: 5,
+        },
+        accounts: {
+          payerSign: payer,
+          payer: payer.publicKey,
+        },
+      });
 
-    //   // create auth
-    //   const { authorizer, vaultAccount: authorizerVaultAccount } =
-    //     await createAuthorizer(program, {
-    //       user: provider.wallet.publicKey,
-    //       authId,
-    //       connection: provider.connection,
-    //       payerSign: payer,
-    //       mint: token.accounts.mint,
-    //     });
+      // create auth
+      const { authorizer, vaultAccount: authorizerVaultAccount } =
+        await createAuthorizer(program, {
+          user: provider.wallet.publicKey,
+          authId,
+          connection: provider.connection,
+          payerSign: payer,
+          mint: token.accounts.mint,
+        });
 
-    //   // create oracle
-    //   const closedAt = new Date().getTime();
-    //   const finishedAt = new Date().getTime() + 1;
-    //   const { oracle } = await createOracle(program, {
-    //     teamAId: 1,
-    //     teamBId: 2,
-    //     user: provider.wallet.publicKey,
-    //     closedAt,
-    //     finishedAt,
-    //     authorizer,
-    //     authId,
-    //   });
+      // create oracle
+      const closedAt = new Date().getTime();
+      const finishedAt = new Date().getTime() + 1;
+      const { oracle } = await createOracle(program, {
+        teamAId: 1,
+        teamBId: 2,
+        user: provider.wallet.publicKey,
+        closedAt,
+        finishedAt,
+        authorizer,
+        authId,
+      });
 
-    //   const { payerMintAccount: playerMintTokenAccount, mint: vaultMint } =
-    //     token.accounts;
+      const { payerMintAccount: playerMintTokenAccount, mint: vaultMint } =
+        token.accounts;
 
-    //   const roomInstruction = {
-    //     roomId: roomId,
-    //     initAmount: 1,
-    //     teamAResult: 1,
-    //     teamBResult: 2,
-    //     playerKey: 0,
-    //   };
+      const roomInstruction = {
+        roomId: roomId,
+        initAmount: 1,
+        teamAResult: 1,
+        teamBResult: 2,
+        playerKey: 0,
+      };
 
-    //   // create room
-    //   const response = await createRoom(program, {
-    //     inputs: {
-    //       roomId: roomInstruction.roomId,
-    //       teamAResult: roomInstruction.teamAResult,
-    //       teamBResult: roomInstruction.teamBResult,
-    //       playerKey: roomInstruction.playerKey,
-    //       initAmount: roomInstruction.initAmount,
-    //     },
-    //     accounts: {
-    //       authorizer: authorizer,
-    //       user: provider.wallet.publicKey,
-    //       vaultMint: vaultMint,
-    //       oracle: oracle,
-    //       playerMintTokenAccount: playerMintTokenAccount,
-    //     },
-    //   });
+      // create room
+      const response = await createRoom(program, {
+        inputs: {
+          roomId: roomInstruction.roomId,
+          teamAResult: roomInstruction.teamAResult,
+          teamBResult: roomInstruction.teamBResult,
+          playerKey: roomInstruction.playerKey,
+          initAmount: roomInstruction.initAmount,
+        },
+        accounts: {
+          authorizer: authorizer,
+          user: provider.wallet.publicKey,
+          vaultMint: vaultMint,
+          oracle: oracle,
+          playerMintTokenAccount: playerMintTokenAccount,
+        },
+      });
 
-    //   const { room, roomPlayers, vault, roomPlayerMetadata } =
-    //     response.accounts;
+      const { room, roomPlayers, vault, roomPlayerMetadata } =
+        response.accounts;
 
-    //   // join room
+      // join room
 
-    //   const joinRoomResponse = await joinRoom(program, {
-    //     inputs: {
-    //       teamAResult: 2,
-    //       teamBResult: 2,
-    //       playerKey: 1,
-    //     },
-    //     accounts: {
-    //       authorizer: authorizer,
-    //       user: provider.wallet.publicKey,
-    //       room,
-    //       roomPlayers,
-    //       vaultMint,
-    //       oracle,
-    //       playerMintTokenAccount,
-    //       vaultAccount: vault,
-    //     },
-    //   });
+      const joinRoomResponse = await joinRoom(program, {
+        inputs: {
+          teamAResult: 2,
+          teamBResult: 2,
+          playerKey: 1,
+        },
+        accounts: {
+          authorizer: authorizer,
+          user: provider.wallet.publicKey,
+          room,
+          roomPlayers,
+          vaultMint,
+          oracle,
+          playerMintTokenAccount,
+          vaultAccount: vault,
+        },
+      });
 
-    //   const { joinPlayerMetadata } = joinRoomResponse.accounts;
+      const { joinPlayerMetadata } = joinRoomResponse.accounts;
 
-    //   // withdraw
+      // withdraw
 
-    //   await updateOracle(program, {
-    //     user: provider.wallet.publicKey,
-    //     teamAValue: 10,
-    //     teamBValue: 10,
-    //     oracle,
-    //     authorizer,
-    //   });
+      await updateOracle(program, {
+        user: provider.wallet.publicKey,
+        teamAValue: 10,
+        teamBValue: 10,
+        oracle,
+        authorizer,
+      });
 
-    //   await program.methods
-    //     .withdraw()
-    //     .accounts({
-    //       authorizer: authorizer,
-    //       oracle: oracle,
-    //       mint: vaultMint,
-    //       room: room,
-    //       roomHistory: joinPlayerMetadata,
-    //       players: roomPlayers,
-    //       vaultAccount: vault,
-    //       playerTokenAccount: playerMintTokenAccount,
-    //       authorizerVaultAccount: authorizerVaultAccount,
-    //     })
-    //     .rpc();
+      await program.methods
+        .withdraw()
+        .accounts({
+          authorizer: authorizer,
+          oracle: oracle,
+          mint: vaultMint,
+          room: room,
+          roomHistory: joinPlayerMetadata,
+          players: roomPlayers,
+          vaultAccount: vault,
+          playerTokenAccount: playerMintTokenAccount,
+          authorizerVaultAccount: authorizerVaultAccount,
+        })
+        .rpc();
 
-    //   const joinPlayerMetadataData =
-    //     await program.account.roomsHistory.fetch(joinPlayerMetadata);
+      const joinPlayerMetadataData =
+        await program.account.roomsHistory.fetch(joinPlayerMetadata);
 
-    //   const vaultMintAccountBalance =
-    //     await provider.connection.getTokenAccountBalance(vault);
+      const vaultMintAccountBalance =
+        await provider.connection.getTokenAccountBalance(vault);
 
-    //   const playerMintAccountBalance =
-    //     await provider.connection.getTokenAccountBalance(
-    //       playerMintTokenAccount
-    //     );
+      const playerMintAccountBalance =
+        await provider.connection.getTokenAccountBalance(
+          playerMintTokenAccount
+        );
 
-    //   assert.ok(
-    //     joinPlayerMetadataData.withdrew,
-    //     "checks if the attr withdrew on player metadata was updated by the program"
-    //   );
+      assert.ok(
+        joinPlayerMetadataData.withdrew,
+        "checks if the attr withdrew on player metadata was updated by the program"
+      );
 
-    //   assert.equal(
-    //     Number(vaultMintAccountBalance.value.amount),
-    //     1,
-    //     "checks if room vault account was increased a token by the program"
-    //   );
+      assert.equal(
+        Number(vaultMintAccountBalance.value.amount),
+        1,
+        "checks if room vault account was increased a token by the program"
+      );
 
-    //   assert.equal(
-    //     Number(playerMintAccountBalance.value.amount),
-    //     4,
-    //     "checks if player mint account was decreased a token by the program"
-    //   );
-    // });
+      assert.equal(
+        Number(playerMintAccountBalance.value.amount),
+        4,
+        "checks if player mint account was decreased a token by the program"
+      );
+    });
   });
 });

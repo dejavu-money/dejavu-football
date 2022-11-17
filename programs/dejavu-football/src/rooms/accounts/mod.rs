@@ -82,6 +82,8 @@ pub struct CreateRoomAccounts<'info> {
     #[account(mut)]
     pub player_token_account: Box<Account<'info, TokenAccount>>,
     pub authorizer: Box<Account<'info, AuthorizerAccount>>,
+    #[account(mut)]
+    pub payer_token_account: Box<Account<'info, TokenAccount>>,
 }
 
 #[derive(Accounts)]
@@ -121,7 +123,9 @@ pub struct JoinRoomAccounts<'info> {
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
     #[account(mut)]
-    pub player_token_account: Account<'info, TokenAccount>,
+    pub player_token_account: Box<Account<'info, TokenAccount>>,
+    #[account(mut)]
+    pub payer_token_account: Box<Account<'info, TokenAccount>>,
 }
 
 #[derive(Accounts)]
